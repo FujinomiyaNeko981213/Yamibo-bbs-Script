@@ -10,7 +10,7 @@
 // @require      https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/localforage/1.10.0/localforage.min.js#sha512=+BMamP0e7wn39JGL8nKAZ3yAQT2dL5oaXWr4ZYlTGkKOaoXM/Yj7c4oy50Ngz5yoUutAG17flueD4F6QpTlPng==
 // @require      https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/echarts/5.3.0/echarts.min.js#sha512=dvHO84j/D1YX7AWkAPC/qwRTfEgWRHhI3n7J5EAqMwm4r426sTkcOs6OmqCtmkg0QXNKtiFa67Tp77JWCRRINg==
 // @require      https://greasyfork.org/scripts/424901-nga-script-resource/code/NGA-Script-Resource.js?version=1268947
-// @icon         https://i.loli.net/2021/04/07/8x3yFj2pWEKluSY.png
+// @icon         https://bbs.yamibo.com/uc_server/data/avatar/000/69/12/22_avatar_middle.jpg?ts=1752408353
 // @match        *://bbs.yamibo.com/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -273,8 +273,8 @@
          */
         printLog(msg) {
             console.log(`%cyamibo%cScript%c ${msg}`,
-                'background: #222;color: #fff;font-weight:bold;padding:2px 2px 2px 4px;border-radius:4px 0 0 4px;',
-                'background: #fe9a00;color: #000;font-weight:bold;padding:2px 4px 2px 2px;border-radius:0px 4px 4px 0px;',
+                'background: #6E2B19;color: #fff;font-weight:bold;padding:2px 2px 2px 4px;border-radius:4px 0 0 4px;',
+                'background: #DBC38C;color: #6E2B19;font-weight:bold;padding:2px 4px 2px 2px;border-radius:0px 4px 4px 0px;',
                 'background:none;color:#000;'
             )
         }
