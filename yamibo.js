@@ -448,6 +448,9 @@
         run() {
             this.checkUpdate()
             this.init()
+            this.renderAlways()
+            this.isThreads() && this.renderThreads()
+            this.isForms() && this.renderForms()
             setInterval(() => {
                 this.renderAlways()
                 this.isThreads() && this.renderThreads()
