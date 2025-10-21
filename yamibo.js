@@ -2481,7 +2481,7 @@
         renderAlwaysFunc() {
             const _this = this
             try {
-                if (script.setting.normal.autoPage) {
+                if (script.setting.normal.autoPage && script.setting.normal.excelMode) {
                     let ticking = false;
                     let once = false; // 如果要每次到底都点，把这行改成 false 并删除下面的 once 判断
                     $(window).off('scroll.autoPage').on('scroll.autoPage', function () {
