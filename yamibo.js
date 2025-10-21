@@ -1825,7 +1825,7 @@
         .excel-body .c0{display:table-cell;}
         .excel-body .pil.cl, .excel-body .pls.cl.favatar i, .excel-body .tbox.theatlevel, .excel-body .sign, .excel-body .cm, .excel-body .rate, .excel-body .psth.xs1, .excel-body .plc.plm, .excel-body .plc .po.hin, .excel-body .tns.xg2, .excel-body .pti, .excel-body .displaynoneInExcel{display:none;}
         .excel-body .tl .bm_c tr:hover th,.excel-body .tl .bm_c tr:hover td{background-color:#fff}
-        .excel-body.excel-theme-tencent #nv_forum, .excel-body.excel-theme-tencent #nv_home {margin-top: 145px;}
+        #nv_forum.excel-body.excel-theme-tencent, #nv_home.excel-body.excel-theme-tencent {margin-top: 145px;}
         .excel-body .tl th {border-bottom: 1px solid #ebebeb;border-right: 1px solid #ebebeb;}
         .excel-header, .excel-footer, .excel-setting, .half-clone {display: none;}
         .excel-header>div, .excel-footer>div {position: relative;box-sizing: border-box;}
