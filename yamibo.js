@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         yamibo优化摸鱼体验
-// @namespace    https://github.com/kisshang1993/NGA-BBS-Script
-// @version      4.5.6
+// @namespace    https://github.com/FujinomiyaNeko981213/Yamibo-bbs-Script
+// @version      1.0.0
 // @author       ZAIYANGNANYUE
-// @description  yamibo论坛显示优化，全面功能增强，优雅的摸鱼
+// @description  yamibo论坛显示优化，参考https://github.com/kisshang1993/NGA-BBS-Script
 // @license      MIT
 // @require      https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/jquery/3.4.0/jquery.min.js#sha512=Pa4Jto+LuCGBHy2/POQEbTh0reuoiEXQWXGn8S7aRlhcwpVkO8+4uoZVSOqUjdCsE+77oygfu2Tl+7qGHGIWsw==
 // @require      https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/spectrum/1.8.0/spectrum.min.js#sha512=Bx3FZ9S4XKYq5P1Yxfqp36JifotqAAAl5eotNaGWE1zSSLifBZlbKExLh2NKHA4CTlqHap7xdFzo39W+CTKrWQ==
@@ -238,7 +238,7 @@
             const endInitTime = new Date().getTime()
             console.table(modulesTable)
             this.printLog(`[v${this.getInfo().version}] 初始化完成: 共加载${this.modules.length}个模块，总耗时${endInitTime-startInitTime}ms`)
-            console.log('%c反馈问题请前往: https://github.com/kisshang1993/NGA-BBS-Script/issues', 'color:orangered;font-weight:bolder')
+            console.log('%c反馈问题请前往: https://github.com/FujinomiyaNeko981213/Yamibo-bbs-Script/issues', 'color:orangered;font-weight:bolder')
         }
         /**
          * 通知弹框
@@ -3667,511 +3667,511 @@
             }
         }
     }
-    /**
-     * 用户增强
-     * @name UserEnhance
-     * @description 此模块提供了用户功能类的增强，如显示注册天数，IP所属地等
-     */
-    const UserEnhance = {
-        name: 'UserEnhance',
-        title: '用户增强',
-        settings: [{
-            type: 'normal',
-            key: 'userEnhance',
-            default: true,
-            title: '用户增强',
-            menu: 'right'
-        }, {
-            type: 'advanced',
-            key: 'locationFlagMode',
-            default: 'FLAG_AND_TEXT',
-            options: [{
-                label: '国旗',
-                value: 'FLAG'
-            }, {
-                label: '文字',
-                value: 'TEXT'
-            }, {
-                label: '国旗加文字',
-                value: 'FLAG_AND_TEXT'
-            }],
-            title: '属地显示模式',
-            desc: '调整属地显示模式: \n全部国旗: 显示国旗不显示文字\n全部文字: 显示文字不显示国旗\n国旗加文字: 前面显示国旗后面显示文字',
-            menu: 'right'
-        }],
-        forumData: {
-            '108': '垃圾处理'
-        },
-        chart: null,
-        activeCount: [],
-        requestTasks: [],
-        currentUserInfo: {},
-        pageInfo: {},
-        queryTimer: null,
-        store: null,
-        initFunc() {
-            // 创建storage示例
-            this.store = script.createStorageInstance('yamibo_BBS_Script__UserInfoCache')
-            this.preprocessing()
-        },
-        renderFormsFunc($el) {
-            if (!script.setting.normal.userEnhance) return
-            const uid = parseInt($el.find('a[name="uid"]').text())
-            const userInfo = unsafeWindow.commonui.userInfo.users[uid]
-            if (!userInfo || uid <= 0) return
-            const regSeconds = Math.ceil(new Date().getTime() / 1000) - userInfo.regdate
-            const regDays = Math.round(regSeconds / 3600 / 24)
-            const regYear = (regSeconds / 3600 / 24 / 365).toFixed(1)
-            // 插入UI
-            const $userEnhanceContainer = $(`<div class="hld__user-enhance hld__user-enhance-${uid}"></div>`)
-            const $node = $el.find('.posterinfo div.stat .clickextend').siblings('div:first-child')
-            $node.after($userEnhanceContainer)
-            $userEnhanceContainer.append(`<div><span title="注册天数: ${regDays}天\n注册年数: ${regYear}年">坛龄: <span class="numeric userval" name="regday">${regDays}天</span></span></div>`)
-            $userEnhanceContainer.append(`<div><span title="发帖数量: ${userInfo.postnum}">发帖: <span class="numeric userval" name="regday">${userInfo.postnum}</span></span></div>`)
-            $userEnhanceContainer.append(`<div><span style="display: inline-flex;align-items: center;" class="hld__user-location">属地: <span class="userval numeric hld__req-retry" style="margin-left:5px;">点击获取</span></span></div>`)
-            $userEnhanceContainer.append(`<div class="hld__qbc"><button>查看用户活动记录</button></div>`)
-            $userEnhanceContainer.find('.hld__user-location > span').click(e => {
-                if (!$(e.target).hasClass('hld__req-retry')) return
-                this.getUserLocation(uid)
-            })
-            $el.find('.hld__qbc > button').click(() => this.queryUserActivityRecords(userInfo))
-            // this.getUserLocation(uid)
-        },
-        /**
-         * 预处理
-         */
-        async preprocessing() {
-            // 初始化的时候清理超过一定时间的数据，避免无限增长数据
-            // 出于性能考虑，每日只执行一次
-            const currentDate = new Date()
-            const lastClear = await this.store.getItem('USERENHANCE_CLEAR_DAY')
-            if (lastClear != currentDate.getDate()) {
-                const exprieSeconds = 7 * 24 * 3600  // 7天
-                const currentTime = Math.ceil(currentDate.getTime() / 1000)
-                let removedCount = 0
-                this.store.iterate((value, key, iterationNumber) => {
-                    if (key.startsWith('USERINFO_')) {
-                        if (!value._queryTime || currentTime - value._queryTime >= exprieSeconds) {
-                            this.store.removeItem(key)
-                            removedCount += 1
-                        }
-                    }
-                })
-                .then(() => {
-                    this.store.setItem('USERENHANCE_CLEAR_DAY', currentDate.getDate())
-                    script.printLog(`用户增强: 已清除${removedCount}条用户超期数据`)
-                })
-                .catch(err => {
-                    console.error('用户增强清除超期数据失败，错误原因:', err)
-                })
-            }
-            // 获取所有版面字典，扁平化提纯fid:name
-            if (!window?.script_muti_get_var_store?.data) {
-                await $.ajax({
-                    url: unsafeWindow.__API.indexForumList(),
-                    dataType: 'script',
-                    cache: true
-                })
-            }
-            const _forumData = script_muti_get_var_store.data?.['0']?.all
-            if (_forumData && typeof _forumData == 'object') {
-                for (const v1 of Object.values(_forumData)) {
-                    if (v1.content && typeof v1.content == 'object') {
-                        for (const v2 of Object.values(v1.content)) {
-                            if (v2.content && typeof v2.content == 'object') {
-                                for (const v3 of Object.values(v2.content)) {
-                                    this.forumData[v3.fid] = v3.name
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    // /**
+    //  * 用户增强
+    //  * @name UserEnhance
+    //  * @description 此模块提供了用户功能类的增强，如显示注册天数，IP所属地等
+    //  */
+    // const UserEnhance = {
+    //     name: 'UserEnhance',
+    //     title: '用户增强',
+    //     settings: [{
+    //         type: 'normal',
+    //         key: 'userEnhance',
+    //         default: true,
+    //         title: '用户增强',
+    //         menu: 'right'
+    //     }, {
+    //         type: 'advanced',
+    //         key: 'locationFlagMode',
+    //         default: 'FLAG_AND_TEXT',
+    //         options: [{
+    //             label: '国旗',
+    //             value: 'FLAG'
+    //         }, {
+    //             label: '文字',
+    //             value: 'TEXT'
+    //         }, {
+    //             label: '国旗加文字',
+    //             value: 'FLAG_AND_TEXT'
+    //         }],
+    //         title: '属地显示模式',
+    //         desc: '调整属地显示模式: \n全部国旗: 显示国旗不显示文字\n全部文字: 显示文字不显示国旗\n国旗加文字: 前面显示国旗后面显示文字',
+    //         menu: 'right'
+    //     }],
+    //     forumData: {
+    //         '108': '垃圾处理'
+    //     },
+    //     chart: null,
+    //     activeCount: [],
+    //     requestTasks: [],
+    //     currentUserInfo: {},
+    //     pageInfo: {},
+    //     queryTimer: null,
+    //     store: null,
+    //     initFunc() {
+    //         // 创建storage示例
+    //         this.store = script.createStorageInstance('yamibo_BBS_Script__UserInfoCache')
+    //         this.preprocessing()
+    //     },
+    //     renderFormsFunc($el) {
+    //         if (!script.setting.normal.userEnhance) return
+    //         const uid = parseInt($el.find('a[name="uid"]').text())
+    //         const userInfo = unsafeWindow.commonui.userInfo.users[uid]
+    //         if (!userInfo || uid <= 0) return
+    //         const regSeconds = Math.ceil(new Date().getTime() / 1000) - userInfo.regdate
+    //         const regDays = Math.round(regSeconds / 3600 / 24)
+    //         const regYear = (regSeconds / 3600 / 24 / 365).toFixed(1)
+    //         // 插入UI
+    //         const $userEnhanceContainer = $(`<div class="hld__user-enhance hld__user-enhance-${uid}"></div>`)
+    //         const $node = $el.find('.posterinfo div.stat .clickextend').siblings('div:first-child')
+    //         $node.after($userEnhanceContainer)
+    //         $userEnhanceContainer.append(`<div><span title="注册天数: ${regDays}天\n注册年数: ${regYear}年">坛龄: <span class="numeric userval" name="regday">${regDays}天</span></span></div>`)
+    //         $userEnhanceContainer.append(`<div><span title="发帖数量: ${userInfo.postnum}">发帖: <span class="numeric userval" name="regday">${userInfo.postnum}</span></span></div>`)
+    //         $userEnhanceContainer.append(`<div><span style="display: inline-flex;align-items: center;" class="hld__user-location">属地: <span class="userval numeric hld__req-retry" style="margin-left:5px;">点击获取</span></span></div>`)
+    //         $userEnhanceContainer.append(`<div class="hld__qbc"><button>查看用户活动记录</button></div>`)
+    //         $userEnhanceContainer.find('.hld__user-location > span').click(e => {
+    //             if (!$(e.target).hasClass('hld__req-retry')) return
+    //             this.getUserLocation(uid)
+    //         })
+    //         $el.find('.hld__qbc > button').click(() => this.queryUserActivityRecords(userInfo))
+    //         // this.getUserLocation(uid)
+    //     },
+    //     /**
+    //      * 预处理
+    //      */
+    //     async preprocessing() {
+    //         // 初始化的时候清理超过一定时间的数据，避免无限增长数据
+    //         // 出于性能考虑，每日只执行一次
+    //         const currentDate = new Date()
+    //         const lastClear = await this.store.getItem('USERENHANCE_CLEAR_DAY')
+    //         if (lastClear != currentDate.getDate()) {
+    //             const exprieSeconds = 7 * 24 * 3600  // 7天
+    //             const currentTime = Math.ceil(currentDate.getTime() / 1000)
+    //             let removedCount = 0
+    //             this.store.iterate((value, key, iterationNumber) => {
+    //                 if (key.startsWith('USERINFO_')) {
+    //                     if (!value._queryTime || currentTime - value._queryTime >= exprieSeconds) {
+    //                         this.store.removeItem(key)
+    //                         removedCount += 1
+    //                     }
+    //                 }
+    //             })
+    //             .then(() => {
+    //                 this.store.setItem('USERENHANCE_CLEAR_DAY', currentDate.getDate())
+    //                 script.printLog(`用户增强: 已清除${removedCount}条用户超期数据`)
+    //             })
+    //             .catch(err => {
+    //                 console.error('用户增强清除超期数据失败，错误原因:', err)
+    //             })
+    //         }
+    //         // 获取所有版面字典，扁平化提纯fid:name
+    //         if (!window?.script_muti_get_var_store?.data) {
+    //             await $.ajax({
+    //                 url: unsafeWindow.__API.indexForumList(),
+    //                 dataType: 'script',
+    //                 cache: true
+    //             })
+    //         }
+    //         const _forumData = script_muti_get_var_store.data?.['0']?.all
+    //         if (_forumData && typeof _forumData == 'object') {
+    //             for (const v1 of Object.values(_forumData)) {
+    //                 if (v1.content && typeof v1.content == 'object') {
+    //                     for (const v2 of Object.values(v1.content)) {
+    //                         if (v2.content && typeof v2.content == 'object') {
+    //                             for (const v3 of Object.values(v2.content)) {
+    //                                 this.forumData[v3.fid] = v3.name
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
 
-        },
-        getUserLocation(uid) {
-            $('.hld__user-enhance-'+uid).find('.hld__user-location > span').attr('class', 'userval numeric loading').empty()
-            // 调用数据接口获取属地
-            this.getRemoteUserInfo(uid)
-            .then(remoteUserInfo => {
-                $('.hld__user-enhance-'+uid).find('.hld__user-location').attr('title', `IP属地: ${remoteUserInfo.ipLoc}`)
-                $('.hld__user-enhance-'+uid).find('.hld__user-location > span').replaceWith(this.getCountryFlag(remoteUserInfo.ipLoc))
-            })
-            .catch(err => {
-                $('.hld__user-enhance-'+uid).find('.hld__user-location > span').attr('class', 'userval numeric hld__req-retry').html(`获取失败(${err.status}), 点击重试`)
-            })
-        },
-        /**
-         * 调用接口获取用户信息
-         * @param {String} uid 用户UID
-         * @returns Promise 用户信息对象
-         */
-        getRemoteUserInfo(uid) {
-            const storageKey = `USERINFO_${uid}`
-            return new Promise((resolve, reject) => {
-                this.store.getItem(storageKey)
-                .then(value => {
-                    if (value) {
-                        resolve(value)
-                    } else {
-                        $.ajax({url: `https://${window.location.host}/nuke.php?__output=11&__act=get&__lib=ucp&uid=${uid}`})
-                        .then(res => {
-                            if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-                                const remoteUserInfo = res.data[0]
-                                remoteUserInfo['_queryTime'] = res.time
-                                this.store.setItem(storageKey, remoteUserInfo)
-                                resolve(res.data[0])
-                            }
-                        })
-                        .catch(err => reject(err))
-                    }
-                })
-            })
-        },
-        /**
-         * 获取属地标识代码
-         * @param {String} chsName 中文国家名称
-         * @returns HTML代码
-         */
-        getCountryFlag(chsName) {
-            let textElement = `<span class="numeric userval" name="location">${chsName}</span>`
-            let flagElement = ''
-            if (script.setting.advanced.locationFlagMode != 'TEXT') {
-                const flagUrl = `https://www.huuua.com/zi/scss/icons/flag-icon-css/flags`
-                if (CHINESE_CONVERT_ISO3166_1[chsName]) {
-                    flagElement = `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1[chsName].toLowerCase()}.svg"/>`
-                } else if (CHINA_PROVINCE.includes(chsName.endsWith('省') ? chsName.slice(0, -1) : chsName)) {
-                    flagElement = `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="中国" src="${flagUrl}/cn.svg"/> `
-                    const specialArea = ['香港', '澳门', '台湾'].find(name => chsName.endsWith(name))
-                    if (specialArea) {
-                        flagElement += `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="中国${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1['中国'+chsName].toLowerCase()}.svg"/> `
-                    }
-                }
-            }
-            switch (script.setting.advanced.locationFlagMode) {
-                case 'FLAG':
-                    return flagElement
-                case 'TEXT':
-                    return textElement
-                case 'FLAG_AND_TEXT':
-                    return flagElement + textElement
-                default:
-                    return textElement
-            }
-        },
-        /**
-         * 查询用户最近活动记录(3页)
-         * @param {Object} userInfo 用户信息对象
-         */
-        async queryUserActivityRecords(userInfo) {
-            $('#hld__chart_cover').remove()
-            if (typeof echarts === 'undefined') {
-                script.popMsg('该功能所需资源库正在加载，请稍后再试', 'warn')
-                return
-            }
-            $('body').append(`
-                <div id="hld__chart_cover" class="animated zoomIn">
-                    <a href="javascript:void(0)" class="hld__setting-close">×</a>
-                    <div id="hld__chart_container">
-                        <div class="loading"></div>
-                    </div>
-                    <div class="hld__chart-statistics">
-                        <div class="hld__statistics-status">
-                            <div class="hld__st-t">🏷️ 当前统计的数据量</div>
-                            <div class="hld__st-s1">用户发布的主题(页):</div>
-                            <div class="hld__st-s1-1">- 已统计
-                                <span class="hld__st-c" id="hld__statistics_post_pages">0</span>页
-                                <span class="hld__st-l" id="hld__statistics_post_status"></span>
-                            </div>
-                            <div class="hld__st-s1">用户回复的主题(页)</div>
-                            <div class="hld__st-s1-1">- 已统计
-                                <span class="hld__st-c" id="hld__statistics_reply_pages">0</span>页
-                                <span class="hld__st-l" id="hld__statistics_reply_status"></span>
-                            </div>
-                            <div class="hld__st-s1">数据天数跨度</div>
-                            <div class="hld__st-s1-1">- 已统计
-                                <span class="hld__st-c" id="hld__statistics_days_range">-</span>天内
-                            </div>
-                            <div class="hld__st-t">🏷️ 统计结果</div>
-                            <div class="hld__st-s2">✔️ 发布主题: <span class="hld__st-c" id="hld__statistics_post_count">-</span></div>
-                            <div class="hld__st-s2">✔️ 回复主题: <span class="hld__st-c" id="hld__statistics_reply_count">-</span></div>
-                            <div class="hld__st-s2">✔️ 总计发帖: <span class="hld__st-c" id="hld__statistics_total_count">-</span></div>
-                        </div>
-                        <button id="hld__chart_deep_query">深度统计</button>
-                    </div>
-                </div>
-            `)
-            $('#hld__chart_cover .hld__setting-close').click(() => {
-                this.queryUserDeepRecords('end')
-                $('#hld__chart_cover').remove()
-            })
-            $('#hld__chart_cover #hld__chart_deep_query').click(() => this.queryUserDeepRecords())
+    //     },
+    //     getUserLocation(uid) {
+    //         $('.hld__user-enhance-'+uid).find('.hld__user-location > span').attr('class', 'userval numeric loading').empty()
+    //         // 调用数据接口获取属地
+    //         this.getRemoteUserInfo(uid)
+    //         .then(remoteUserInfo => {
+    //             $('.hld__user-enhance-'+uid).find('.hld__user-location').attr('title', `IP属地: ${remoteUserInfo.ipLoc}`)
+    //             $('.hld__user-enhance-'+uid).find('.hld__user-location > span').replaceWith(this.getCountryFlag(remoteUserInfo.ipLoc))
+    //         })
+    //         .catch(err => {
+    //             $('.hld__user-enhance-'+uid).find('.hld__user-location > span').attr('class', 'userval numeric hld__req-retry').html(`获取失败(${err.status}), 点击重试`)
+    //         })
+    //     },
+    //     /**
+    //      * 调用接口获取用户信息
+    //      * @param {String} uid 用户UID
+    //      * @returns Promise 用户信息对象
+    //      */
+    //     getRemoteUserInfo(uid) {
+    //         const storageKey = `USERINFO_${uid}`
+    //         return new Promise((resolve, reject) => {
+    //             this.store.getItem(storageKey)
+    //             .then(value => {
+    //                 if (value) {
+    //                     resolve(value)
+    //                 } else {
+    //                     $.ajax({url: `https://${window.location.host}/nuke.php?__output=11&__act=get&__lib=ucp&uid=${uid}`})
+    //                     .then(res => {
+    //                         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+    //                             const remoteUserInfo = res.data[0]
+    //                             remoteUserInfo['_queryTime'] = res.time
+    //                             this.store.setItem(storageKey, remoteUserInfo)
+    //                             resolve(res.data[0])
+    //                         }
+    //                     })
+    //                     .catch(err => reject(err))
+    //                 }
+    //             })
+    //         })
+    //     },
+    //     /**
+    //      * 获取属地标识代码
+    //      * @param {String} chsName 中文国家名称
+    //      * @returns HTML代码
+    //      */
+    //     getCountryFlag(chsName) {
+    //         let textElement = `<span class="numeric userval" name="location">${chsName}</span>`
+    //         let flagElement = ''
+    //         if (script.setting.advanced.locationFlagMode != 'TEXT') {
+    //             const flagUrl = `https://www.huuua.com/zi/scss/icons/flag-icon-css/flags`
+    //             if (CHINESE_CONVERT_ISO3166_1[chsName]) {
+    //                 flagElement = `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1[chsName].toLowerCase()}.svg"/>`
+    //             } else if (CHINA_PROVINCE.includes(chsName.endsWith('省') ? chsName.slice(0, -1) : chsName)) {
+    //                 flagElement = `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="中国" src="${flagUrl}/cn.svg"/> `
+    //                 const specialArea = ['香港', '澳门', '台湾'].find(name => chsName.endsWith(name))
+    //                 if (specialArea) {
+    //                     flagElement += `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="中国${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1['中国'+chsName].toLowerCase()}.svg"/> `
+    //                 }
+    //             }
+    //         }
+    //         switch (script.setting.advanced.locationFlagMode) {
+    //             case 'FLAG':
+    //                 return flagElement
+    //             case 'TEXT':
+    //                 return textElement
+    //             case 'FLAG_AND_TEXT':
+    //                 return flagElement + textElement
+    //             default:
+    //                 return textElement
+    //         }
+    //     },
+    //     /**
+    //      * 查询用户最近活动记录(3页)
+    //      * @param {Object} userInfo 用户信息对象
+    //      */
+    //     async queryUserActivityRecords(userInfo) {
+    //         $('#hld__chart_cover').remove()
+    //         if (typeof echarts === 'undefined') {
+    //             script.popMsg('该功能所需资源库正在加载，请稍后再试', 'warn')
+    //             return
+    //         }
+    //         $('body').append(`
+    //             <div id="hld__chart_cover" class="animated zoomIn">
+    //                 <a href="javascript:void(0)" class="hld__setting-close">×</a>
+    //                 <div id="hld__chart_container">
+    //                     <div class="loading"></div>
+    //                 </div>
+    //                 <div class="hld__chart-statistics">
+    //                     <div class="hld__statistics-status">
+    //                         <div class="hld__st-t">🏷️ 当前统计的数据量</div>
+    //                         <div class="hld__st-s1">用户发布的主题(页):</div>
+    //                         <div class="hld__st-s1-1">- 已统计
+    //                             <span class="hld__st-c" id="hld__statistics_post_pages">0</span>页
+    //                             <span class="hld__st-l" id="hld__statistics_post_status"></span>
+    //                         </div>
+    //                         <div class="hld__st-s1">用户回复的主题(页)</div>
+    //                         <div class="hld__st-s1-1">- 已统计
+    //                             <span class="hld__st-c" id="hld__statistics_reply_pages">0</span>页
+    //                             <span class="hld__st-l" id="hld__statistics_reply_status"></span>
+    //                         </div>
+    //                         <div class="hld__st-s1">数据天数跨度</div>
+    //                         <div class="hld__st-s1-1">- 已统计
+    //                             <span class="hld__st-c" id="hld__statistics_days_range">-</span>天内
+    //                         </div>
+    //                         <div class="hld__st-t">🏷️ 统计结果</div>
+    //                         <div class="hld__st-s2">✔️ 发布主题: <span class="hld__st-c" id="hld__statistics_post_count">-</span></div>
+    //                         <div class="hld__st-s2">✔️ 回复主题: <span class="hld__st-c" id="hld__statistics_reply_count">-</span></div>
+    //                         <div class="hld__st-s2">✔️ 总计发帖: <span class="hld__st-c" id="hld__statistics_total_count">-</span></div>
+    //                     </div>
+    //                     <button id="hld__chart_deep_query">深度统计</button>
+    //                 </div>
+    //             </div>
+    //         `)
+    //         $('#hld__chart_cover .hld__setting-close').click(() => {
+    //             this.queryUserDeepRecords('end')
+    //             $('#hld__chart_cover').remove()
+    //         })
+    //         $('#hld__chart_cover #hld__chart_deep_query').click(() => this.queryUserDeepRecords())
 
-            this.activeCount = []
-            this.requestTasks = []
-            this.currentUserInfo = userInfo
-            this.pageInfo = {
-                post: {
-                    label: '发布主题',
-                    pages: 0,
-                    status: '',
-                    earliestPostdate: new Date().getTime() / 1000
-                },
-                reply: {
-                    label: '回复主题',
-                    pages: 0,
-                    status: '',
-                    earliestPostdate: new Date().getTime() / 1000
-                }
-            }
-            // 查询发帖记录
-            // tips: 由于yamibo限流, 此处暂先拉取一页回复记录
-            for (let i=0;i<1;i++) {
-                // 查询发帖记录
-                // this.requestTasks.push(this.requestUserRecords(userInfo.uid, 'post', i+1))
-                // 查询回复记录
-                this.requestTasks.push(this.requestUserRecords(userInfo.uid, 'reply', i+1))
-            }
-            Promise.allSettled(this.requestTasks)
-            .then(() => {
-                // 渲染chart
-                const chartContainer = document.getElementById('hld__chart_container')
-                if (!chartContainer) return
-                this.chart = echarts.init(chartContainer)
-                this.statisticsCount()
-                this.updateChart()
-            })
-            .catch(err => {
-                script.popMsg(`查询【${this.pageInfo[err.type].label}第${err.page}页】数据接口失败! 原因: ${err.errMsg}`, 'err')
-            })
-        },
-        /**
-         * 查询当前用户深度活动记录(到上限)
-         */
-        async queryUserDeepRecords(status) {
-            if (status != 'end' && !$('#hld__chart_deep_query').hasClass('hld__query-loading')) {
-                // 步进统计
-                $('#hld__chart_deep_query').addClass('hld__query-loading').text('暂停统计')
-                this.queryTimer = setInterval(async () => {
-                    try {
-                        if (!this.pageInfo.post.status.endsWith('max')) {
-                            await this.requestUserRecords(this.currentUserInfo.uid, 'post', this.pageInfo.post.pages + 1)
-                        } else if (!this.pageInfo.reply.status.endsWith('max')) {
-                            await this.requestUserRecords(this.currentUserInfo.uid, 'reply', this.pageInfo.reply.pages + 1)
-                        }
-                        if (this.pageInfo.post.status.endsWith('max') && this.pageInfo.reply.status.endsWith('max')) {
-                            this.queryUserDeepRecords('end')  // 停止(完成)统计
-                        }
-                    } catch (err) {
-                        script.popMsg(`查询【${this.pageInfo[err.type].label}第${err.page}页】数据接口失败! 原因: ${err.errMsg}`, 'err')
-                        this.queryUserDeepRecords('pause')  // 停止(暂停)统计
-                    } finally {
-                        this.statisticsCount()
-                        this.updateChart()
-                    }
-                }, 2000)
-            } else {
-                // 暂停&完成统计
-                $('#hld__chart_deep_query').removeClass('hld__query-loading').text('继续统计')
-                if (status == 'end') {
-                    $('#hld__chart_deep_query').attr('disabled', 'disabled').text('统计完成')
-                }
-                if (this.queryTimer) {
-                    clearInterval(this.queryTimer)
-                    this.queryTimer = null
-                }
-            }
-        },
-        /**
-         * 统计数量
-         */
-        statisticsCount(validList, incrField) {
-            if (validList && incrField) {
-                validList.forEach(item => {
-                    const pName = item.parent && item.parent['2'] ? item.parent['2'] : ''
-                    let existRecord = this.activeCount.find(p => p.fid == item.fid)
-                    if (!existRecord) {
-                        existRecord = {fid: item.fid, name: pName, postdate: item.postdate, value: 0, post: 0, reply: 0}
-                        this.activeCount.push(existRecord)
-                    }
-                    existRecord['fid'] = item.fid
-                    existRecord['name'] ||= pName
-                    existRecord['value'] += 1
-                    existRecord[incrField] += 1
-                })
-            }
-            const postCount = this.activeCount.reduce((p, c) => p + c.post, 0)
-            const replyCount = this.activeCount.reduce((p, c) => p + c.reply, 0)
-            // 计算统计数据
-            $('#hld__statistics_post_pages').text(this.pageInfo.post.pages)
-            $('#hld__statistics_post_status').attr('class', `hld__st-l ${this.pageInfo.post.status}`)
-            $('#hld__statistics_reply_pages').text(this.pageInfo.reply.pages)
-            $('#hld__statistics_reply_status').attr('class', `hld__st-l ${this.pageInfo.reply.status}`)
-            $('#hld__statistics_post_count').text(postCount)
-            $('#hld__statistics_reply_count').text(replyCount)
-            $('#hld__statistics_total_count').text(postCount + replyCount)
-            // 计算时间跨度
-            const minPostDate = Math.min(this.pageInfo.post.earliestPostdate, this.pageInfo.reply.earliestPostdate)
-            const daysRange = Math.ceil((new Date().getTime() / 1000 - minPostDate) / 86400)
-            $('#hld__statistics_days_range').text(daysRange)
-        },
-        /**
-         * 发起查询用户记录
-         */
-        requestUserRecords(uid, type, page) {
-            return new Promise((resolve, reject) => {
-                let url = `https://${window.location.host}/thread.php?__output=11&authorid=${uid}&page=${page}`
-                if (type == 'reply') {
-                    url += '&searchpost=1'
-                }
-                $.ajax({url})
-                .then(postRes => {
-                    const err = postRes.error
-                    if (postRes.data && postRes.data.__T) {
-                        if (page > this.pageInfo[type].pages) {
-                            this.pageInfo[type].pages = page
-                        }
-                        if (this.pageInfo[type].status != 'hld__grab-max') {
-                            this.pageInfo[type].status = ''
-                        }
-                        postRes.data.__T.forEach(item => {
-                            if (item?.__P?.postdate && item.__P.postdate < this.pageInfo[type].earliestPostdate) {
-                                this.pageInfo[type].earliestPostdate = item.__P.postdate
-                            }
-                        })
-                        this.statisticsCount(postRes.data.__T, type)
-                    }
-                    if (err) {
-                        const errMsg = (err && Array.isArray(err)) ? err.join(' ') : err
-                        if (errMsg.includes('没有符合条件的结果')) {
-                            this.pageInfo[type].status = 'hld__grab-max'
-                        } else {
-                            this.pageInfo[type].status = 'hld__grab-err'
-                            reject({errMsg, type, page})
-                            return
-                        }
-                    }
-                    resolve()
-                })
-                .catch(err => reject({
-                    errMsg: `服务器HTTP返回:${err.status}`,
-                    type,
-                    page
-                }))
-            })
-        },
-        /**
-         * 更新图表
-         */
-        updateChart() {
-            // 处理未命名板块
-            this.activeCount.forEach(item => item.name ||= (this.forumData[item.fid] || `板块FID: ${item.fid}`))
-            this.chart.setOption({
-                title: {
-                    text: '用户活跃板块记录',
-                    subtext: this.currentUserInfo.username || `UID: ${this.currentUserInfo.username}`,
-                    top: 10,
-                    left: 'center'
-                },
-                tooltip: {
-                    formatter: function(row) {
-                        return `${row.data.name}<br />总计: ${row.data.value}<br>发布: ${row.data.post}<br>回复: ${row.data.reply}`
-                    }
-                },
-                toolbox: {
-                    show: true,
-                    bottom: 10,
-                    left: 10,
-                    itemSize: 16,
-                    feature: {
-                        saveAsImage: {show: true},
-                    },
-                },
-                legend: {
-                    type: 'scroll',
-                    orient: 'vertical',
-                    left: 10,
-                    top: 'middle'
-                },
-                series: [{
-                    name: '板块',
-                    type: 'pie',
-                    radius: '50%',
-                    label: {
-                        formatter: function(row) {
-                            return `{name|${row.data.name}}\n{detail|发布: ${row.data.post}} {detail|回复: ${row.data.reply}}`
-                        },
-                        minMargin: 5,
-                        edgeDistance: 10,
-                        lineHeight: 15,
-                        rich: {detail: {
-                            fontSize: 10,
-                            color: '#999'
-                        }}
-                    },
-                    labelLine: {
-                        length: 15,
-                        length2: 0,
-                        maxSurfaceAngle: 80
-                    },
-                    labelLayout: params => {
-                        const isLeft = params.labelRect.x < this.chart.getWidth() / 2
-                        const points = params.labelLinePoints
-                        if (points) {
-                            points[2][0] = isLeft ? params.labelRect.x : params.labelRect.x + params.labelRect.width
-                        }
-                        return {labelLinePoints: points}
-                    },
-                    data: this.activeCount,
-                    emphasis: {
-                        itemStyle: {shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)'}
-                    }
-                }],
-                graphic: [{
-                    type: 'image',
-                    right: 10,
-                    bottom: 30,
-                    style: {
-                        image: POWER_BY_yamiboSCRIPT,
-                        width: 150
-                    }
-                }]
-            })
-            $('.hld__chart-statistics').show()
-        },
-        style: `
-        .hld__user-enhance {display:flex;flex-wrap:wrap;}
-        .hld__user-enhance > div {box-sizing:border-box;width:50%;padding-right:3px;}
-        .hld__user-enhance span[name=location] {margin-left:5px;}
-        .hld__country-flag {width:20px;height:auto;margin-left:5px;}
-        .hld__user-location .loading {width:8px;height:8px;border:1px solid #9c958b;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
-        .hld__user-location .hld__req-retry:hover {text-decoration: underline;cursor: pointer;}
-        .hld__qbc {width:100% !important;padding:5px 0;}
-        .hld__qbc > button {margin:0;}
-        #hld__chart_cover {position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);border-radius:10px;background:#FFF;border:1px solid #AAA;box-shadow:0 0 10px rgba(0,0,0,.3);z-index:9993;}
-        #hld__chart_cover > .hld__setting-close {background:#FFF;border:1px solid #AAA;color:#AAA;}
-        #hld__chart_cover > .hld__setting-close:hover {background:#AAA;border:1px solid #FFF;color:#FFF;}
-        #hld__chart_container {width:1000px;height:600px;}
-        #hld__chart_cover .loading {position:absolute;top: 50%;left:50%;margin-top:-20px;margin-left:-25px;width:40px;height:40px;border:2px solid #AAA;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
-        .hld__chart-statistics {display:none;position:absolute;top:calc(50% - 220px);right:10px;min-width:140px;height:400px;}
-        .hld__statistics-status > div {padding: 2px 0;}
-        .hld__statistics-status > .hld__st-t {font-weight:bold;font-size:1.1em;padding-top: 25px;}
-        .hld__statistics-status > .hld__st-s1 {margin-top: 10px;}
-        .hld__statistics-status > .hld__st-s1-1 {font-size:0.9em;color:#00000073;}
-        .hld__statistics-status .hld__st-c {font-weight:bold;font-size:18px;color:#1677ff;margin:0px 2px;}
-        .hld__statistics-status .hld__st-l {display: inline-block;padding: 1px 5px;color: #FFF;transform: scale(0.8);border-radius: 5px;}
-        .hld__statistics-status .hld__st-l.hld__grab-max {background: #67c23a;}
-        .hld__statistics-status .hld__st-l.hld__grab-max:after {content: '最大';}
-        .hld__statistics-status .hld__st-l.hld__grab-err {background: #f56c6c;}
-        .hld__statistics-status .hld__st-l.hld__grab-err:after {content: '错误';}
-        #hld__chart_deep_query {display:flex;align-items:center;margin-top:30px;background:#1677ff;border-color:#1677ff;color:#FFF;padding:6px 15px;border-radius:8px;text-align:center;cursor:pointer;}
-        #hld__chart_deep_query:not(disabled):hover {opacity:.7;}
-        #hld__chart_deep_query:disabled {background: #67c23a;}
-        .hld__query-loading:before {content:"";display: inline-block;margin-right: 5px;width: 8px;height: 8px;border: 2px solid #fff;border-top-color: transparent;border-radius: 100%;animation: loading-circle infinite 0.75s linear;}
-        .hld__statistics-status. {padding:10px 0;}
-        @keyframes loading-circle {0% {transform:rotate(0);}100% {transform:rotate(360deg);}}
-        `
-    }
+    //         this.activeCount = []
+    //         this.requestTasks = []
+    //         this.currentUserInfo = userInfo
+    //         this.pageInfo = {
+    //             post: {
+    //                 label: '发布主题',
+    //                 pages: 0,
+    //                 status: '',
+    //                 earliestPostdate: new Date().getTime() / 1000
+    //             },
+    //             reply: {
+    //                 label: '回复主题',
+    //                 pages: 0,
+    //                 status: '',
+    //                 earliestPostdate: new Date().getTime() / 1000
+    //             }
+    //         }
+    //         // 查询发帖记录
+    //         // tips: 由于yamibo限流, 此处暂先拉取一页回复记录
+    //         for (let i=0;i<1;i++) {
+    //             // 查询发帖记录
+    //             // this.requestTasks.push(this.requestUserRecords(userInfo.uid, 'post', i+1))
+    //             // 查询回复记录
+    //             this.requestTasks.push(this.requestUserRecords(userInfo.uid, 'reply', i+1))
+    //         }
+    //         Promise.allSettled(this.requestTasks)
+    //         .then(() => {
+    //             // 渲染chart
+    //             const chartContainer = document.getElementById('hld__chart_container')
+    //             if (!chartContainer) return
+    //             this.chart = echarts.init(chartContainer)
+    //             this.statisticsCount()
+    //             this.updateChart()
+    //         })
+    //         .catch(err => {
+    //             script.popMsg(`查询【${this.pageInfo[err.type].label}第${err.page}页】数据接口失败! 原因: ${err.errMsg}`, 'err')
+    //         })
+    //     },
+    //     /**
+    //      * 查询当前用户深度活动记录(到上限)
+    //      */
+    //     async queryUserDeepRecords(status) {
+    //         if (status != 'end' && !$('#hld__chart_deep_query').hasClass('hld__query-loading')) {
+    //             // 步进统计
+    //             $('#hld__chart_deep_query').addClass('hld__query-loading').text('暂停统计')
+    //             this.queryTimer = setInterval(async () => {
+    //                 try {
+    //                     if (!this.pageInfo.post.status.endsWith('max')) {
+    //                         await this.requestUserRecords(this.currentUserInfo.uid, 'post', this.pageInfo.post.pages + 1)
+    //                     } else if (!this.pageInfo.reply.status.endsWith('max')) {
+    //                         await this.requestUserRecords(this.currentUserInfo.uid, 'reply', this.pageInfo.reply.pages + 1)
+    //                     }
+    //                     if (this.pageInfo.post.status.endsWith('max') && this.pageInfo.reply.status.endsWith('max')) {
+    //                         this.queryUserDeepRecords('end')  // 停止(完成)统计
+    //                     }
+    //                 } catch (err) {
+    //                     script.popMsg(`查询【${this.pageInfo[err.type].label}第${err.page}页】数据接口失败! 原因: ${err.errMsg}`, 'err')
+    //                     this.queryUserDeepRecords('pause')  // 停止(暂停)统计
+    //                 } finally {
+    //                     this.statisticsCount()
+    //                     this.updateChart()
+    //                 }
+    //             }, 2000)
+    //         } else {
+    //             // 暂停&完成统计
+    //             $('#hld__chart_deep_query').removeClass('hld__query-loading').text('继续统计')
+    //             if (status == 'end') {
+    //                 $('#hld__chart_deep_query').attr('disabled', 'disabled').text('统计完成')
+    //             }
+    //             if (this.queryTimer) {
+    //                 clearInterval(this.queryTimer)
+    //                 this.queryTimer = null
+    //             }
+    //         }
+    //     },
+    //     /**
+    //      * 统计数量
+    //      */
+    //     statisticsCount(validList, incrField) {
+    //         if (validList && incrField) {
+    //             validList.forEach(item => {
+    //                 const pName = item.parent && item.parent['2'] ? item.parent['2'] : ''
+    //                 let existRecord = this.activeCount.find(p => p.fid == item.fid)
+    //                 if (!existRecord) {
+    //                     existRecord = {fid: item.fid, name: pName, postdate: item.postdate, value: 0, post: 0, reply: 0}
+    //                     this.activeCount.push(existRecord)
+    //                 }
+    //                 existRecord['fid'] = item.fid
+    //                 existRecord['name'] ||= pName
+    //                 existRecord['value'] += 1
+    //                 existRecord[incrField] += 1
+    //             })
+    //         }
+    //         const postCount = this.activeCount.reduce((p, c) => p + c.post, 0)
+    //         const replyCount = this.activeCount.reduce((p, c) => p + c.reply, 0)
+    //         // 计算统计数据
+    //         $('#hld__statistics_post_pages').text(this.pageInfo.post.pages)
+    //         $('#hld__statistics_post_status').attr('class', `hld__st-l ${this.pageInfo.post.status}`)
+    //         $('#hld__statistics_reply_pages').text(this.pageInfo.reply.pages)
+    //         $('#hld__statistics_reply_status').attr('class', `hld__st-l ${this.pageInfo.reply.status}`)
+    //         $('#hld__statistics_post_count').text(postCount)
+    //         $('#hld__statistics_reply_count').text(replyCount)
+    //         $('#hld__statistics_total_count').text(postCount + replyCount)
+    //         // 计算时间跨度
+    //         const minPostDate = Math.min(this.pageInfo.post.earliestPostdate, this.pageInfo.reply.earliestPostdate)
+    //         const daysRange = Math.ceil((new Date().getTime() / 1000 - minPostDate) / 86400)
+    //         $('#hld__statistics_days_range').text(daysRange)
+    //     },
+    //     /**
+    //      * 发起查询用户记录
+    //      */
+    //     requestUserRecords(uid, type, page) {
+    //         return new Promise((resolve, reject) => {
+    //             let url = `https://${window.location.host}/thread.php?__output=11&authorid=${uid}&page=${page}`
+    //             if (type == 'reply') {
+    //                 url += '&searchpost=1'
+    //             }
+    //             $.ajax({url})
+    //             .then(postRes => {
+    //                 const err = postRes.error
+    //                 if (postRes.data && postRes.data.__T) {
+    //                     if (page > this.pageInfo[type].pages) {
+    //                         this.pageInfo[type].pages = page
+    //                     }
+    //                     if (this.pageInfo[type].status != 'hld__grab-max') {
+    //                         this.pageInfo[type].status = ''
+    //                     }
+    //                     postRes.data.__T.forEach(item => {
+    //                         if (item?.__P?.postdate && item.__P.postdate < this.pageInfo[type].earliestPostdate) {
+    //                             this.pageInfo[type].earliestPostdate = item.__P.postdate
+    //                         }
+    //                     })
+    //                     this.statisticsCount(postRes.data.__T, type)
+    //                 }
+    //                 if (err) {
+    //                     const errMsg = (err && Array.isArray(err)) ? err.join(' ') : err
+    //                     if (errMsg.includes('没有符合条件的结果')) {
+    //                         this.pageInfo[type].status = 'hld__grab-max'
+    //                     } else {
+    //                         this.pageInfo[type].status = 'hld__grab-err'
+    //                         reject({errMsg, type, page})
+    //                         return
+    //                     }
+    //                 }
+    //                 resolve()
+    //             })
+    //             .catch(err => reject({
+    //                 errMsg: `服务器HTTP返回:${err.status}`,
+    //                 type,
+    //                 page
+    //             }))
+    //         })
+    //     },
+    //     /**
+    //      * 更新图表
+    //      */
+    //     updateChart() {
+    //         // 处理未命名板块
+    //         this.activeCount.forEach(item => item.name ||= (this.forumData[item.fid] || `板块FID: ${item.fid}`))
+    //         this.chart.setOption({
+    //             title: {
+    //                 text: '用户活跃板块记录',
+    //                 subtext: this.currentUserInfo.username || `UID: ${this.currentUserInfo.username}`,
+    //                 top: 10,
+    //                 left: 'center'
+    //             },
+    //             tooltip: {
+    //                 formatter: function(row) {
+    //                     return `${row.data.name}<br />总计: ${row.data.value}<br>发布: ${row.data.post}<br>回复: ${row.data.reply}`
+    //                 }
+    //             },
+    //             toolbox: {
+    //                 show: true,
+    //                 bottom: 10,
+    //                 left: 10,
+    //                 itemSize: 16,
+    //                 feature: {
+    //                     saveAsImage: {show: true},
+    //                 },
+    //             },
+    //             legend: {
+    //                 type: 'scroll',
+    //                 orient: 'vertical',
+    //                 left: 10,
+    //                 top: 'middle'
+    //             },
+    //             series: [{
+    //                 name: '板块',
+    //                 type: 'pie',
+    //                 radius: '50%',
+    //                 label: {
+    //                     formatter: function(row) {
+    //                         return `{name|${row.data.name}}\n{detail|发布: ${row.data.post}} {detail|回复: ${row.data.reply}}`
+    //                     },
+    //                     minMargin: 5,
+    //                     edgeDistance: 10,
+    //                     lineHeight: 15,
+    //                     rich: {detail: {
+    //                         fontSize: 10,
+    //                         color: '#999'
+    //                     }}
+    //                 },
+    //                 labelLine: {
+    //                     length: 15,
+    //                     length2: 0,
+    //                     maxSurfaceAngle: 80
+    //                 },
+    //                 labelLayout: params => {
+    //                     const isLeft = params.labelRect.x < this.chart.getWidth() / 2
+    //                     const points = params.labelLinePoints
+    //                     if (points) {
+    //                         points[2][0] = isLeft ? params.labelRect.x : params.labelRect.x + params.labelRect.width
+    //                     }
+    //                     return {labelLinePoints: points}
+    //                 },
+    //                 data: this.activeCount,
+    //                 emphasis: {
+    //                     itemStyle: {shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)'}
+    //                 }
+    //             }],
+    //             graphic: [{
+    //                 type: 'image',
+    //                 right: 10,
+    //                 bottom: 30,
+    //                 style: {
+    //                     image: POWER_BY_yamiboSCRIPT,
+    //                     width: 150
+    //                 }
+    //             }]
+    //         })
+    //         $('.hld__chart-statistics').show()
+    //     },
+    //     style: `
+    //     .hld__user-enhance {display:flex;flex-wrap:wrap;}
+    //     .hld__user-enhance > div {box-sizing:border-box;width:50%;padding-right:3px;}
+    //     .hld__user-enhance span[name=location] {margin-left:5px;}
+    //     .hld__country-flag {width:20px;height:auto;margin-left:5px;}
+    //     .hld__user-location .loading {width:8px;height:8px;border:1px solid #9c958b;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
+    //     .hld__user-location .hld__req-retry:hover {text-decoration: underline;cursor: pointer;}
+    //     .hld__qbc {width:100% !important;padding:5px 0;}
+    //     .hld__qbc > button {margin:0;}
+    //     #hld__chart_cover {position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);border-radius:10px;background:#FFF;border:1px solid #AAA;box-shadow:0 0 10px rgba(0,0,0,.3);z-index:9993;}
+    //     #hld__chart_cover > .hld__setting-close {background:#FFF;border:1px solid #AAA;color:#AAA;}
+    //     #hld__chart_cover > .hld__setting-close:hover {background:#AAA;border:1px solid #FFF;color:#FFF;}
+    //     #hld__chart_container {width:1000px;height:600px;}
+    //     #hld__chart_cover .loading {position:absolute;top: 50%;left:50%;margin-top:-20px;margin-left:-25px;width:40px;height:40px;border:2px solid #AAA;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
+    //     .hld__chart-statistics {display:none;position:absolute;top:calc(50% - 220px);right:10px;min-width:140px;height:400px;}
+    //     .hld__statistics-status > div {padding: 2px 0;}
+    //     .hld__statistics-status > .hld__st-t {font-weight:bold;font-size:1.1em;padding-top: 25px;}
+    //     .hld__statistics-status > .hld__st-s1 {margin-top: 10px;}
+    //     .hld__statistics-status > .hld__st-s1-1 {font-size:0.9em;color:#00000073;}
+    //     .hld__statistics-status .hld__st-c {font-weight:bold;font-size:18px;color:#1677ff;margin:0px 2px;}
+    //     .hld__statistics-status .hld__st-l {display: inline-block;padding: 1px 5px;color: #FFF;transform: scale(0.8);border-radius: 5px;}
+    //     .hld__statistics-status .hld__st-l.hld__grab-max {background: #67c23a;}
+    //     .hld__statistics-status .hld__st-l.hld__grab-max:after {content: '最大';}
+    //     .hld__statistics-status .hld__st-l.hld__grab-err {background: #f56c6c;}
+    //     .hld__statistics-status .hld__st-l.hld__grab-err:after {content: '错误';}
+    //     #hld__chart_deep_query {display:flex;align-items:center;margin-top:30px;background:#1677ff;border-color:#1677ff;color:#FFF;padding:6px 15px;border-radius:8px;text-align:center;cursor:pointer;}
+    //     #hld__chart_deep_query:not(disabled):hover {opacity:.7;}
+    //     #hld__chart_deep_query:disabled {background: #67c23a;}
+    //     .hld__query-loading:before {content:"";display: inline-block;margin-right: 5px;width: 8px;height: 8px;border: 2px solid #fff;border-top-color: transparent;border-radius: 100%;animation: loading-circle infinite 0.75s linear;}
+    //     .hld__statistics-status. {padding:10px 0;}
+    //     @keyframes loading-circle {0% {transform:rotate(0);}100% {transform:rotate(360deg);}}
+    //     `
+    // }
     /**
      * 插件支持模块
      * @name PluginSupport
@@ -4581,7 +4581,7 @@
     script.addModule(HideHeader)
     script.addModule(ExcelMode)
     script.addModule(FoldQuote)
-    script.addModule(UserEnhance)
+    // script.addModule(UserEnhance)
     script.addModule(LinkTargetBlank)
     script.addModule(DirectLinkJump)
     script.addModule(ImgEnhance)
