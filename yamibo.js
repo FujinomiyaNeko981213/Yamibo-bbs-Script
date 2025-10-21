@@ -1203,7 +1203,6 @@
         },
         apply(on = !!script?.setting?.normal?.hideAvatar) {
             $('body').toggleClass('hld-hide-avatar', on);
-            console.log('[HideAvatar] apply ->', on);
         },
         renderFormsFunc($el) {
             try {
@@ -1217,9 +1216,7 @@
                 try {
                     script.setting.normal.hideAvatar = !script.setting.normal.hideAvatar;
                     HideAvatar.apply(script.setting.normal.hideAvatar);
-
                     script.popNotification(`${script.setting.normal.hideAvatar ? '隐藏' : '显示'}头像`);
-                    console.log('[HideAvatar] toggled ->', script.setting.normal.hideAvatar);
                 } catch (e) {
                     console.error('[HideAvatar] shortcut error:', e);
                 }
