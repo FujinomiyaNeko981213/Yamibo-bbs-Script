@@ -19,8 +19,6 @@
 // @grant        GM_listValues
 // @grant        unsafeWindow
 // @inject-into  content
-// @downloadURL https://update.greasyfork.org/scripts/393991/NGA%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C.user.js
-// @updateURL https://update.greasyfork.org/scripts/393991/NGA%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C.meta.js
 // ==/UserScript==
 
 (function () {
@@ -81,7 +79,7 @@
          * @method renderThreads
          */
         renderThreads() {
-            $('.tr[hld-threads-render!=ok]').each((index, dom) => {
+            $('#threadlist tbody tr[hld-threads-render!=ok]').each((index, dom) => {
                 const $el = $(dom)
                 for (const module of this.modules) {
                     try {
@@ -99,7 +97,7 @@
          * @method renderForms
          */
         renderForms() {
-            $('#postlist tr[hld-forms-render!=ok]').each((index, dom) => {
+            $('#postlist table.plhin > tbody:first-of-type > tr:first-child').each((index, dom) => {
                 const $el = $(dom)
                 // 等待yamibo页面渲染完成
                 for (const module of this.modules) {
@@ -247,9 +245,9 @@
          * @param {Number} duration 显示时长(ms)
          */
         popNotification(msg, duration=1000) {
-            $('#hld__noti_container').length == 0 && $('body').append('<div id="hld__noti_container"></div>')
-            let $msgBox = $(`<div class="hld__noti-msg">${msg}</div>`)
-            $('#hld__noti_container').append($msgBox)
+            $('#noti_container').length == 0 && $('body').append('<div id="noti_container"></div>')
+            let $msgBox = $(`<div class="noti-msg">${msg}</div>`)
+            $('#noti_container').append($msgBox)
             $msgBox.slideDown(100)
             setTimeout(() => { $msgBox.fadeOut(500) }, duration)
             setTimeout(() => { $msgBox.remove() }, duration + 500)
@@ -261,8 +259,8 @@
          * @param {String} type 消息类型 [ok, err, warn]
          */
         popMsg(msg, type='ok') {
-            $('.hld__msg').length > 0 && $('.hld__msg').remove()
-            let $msg = $(`<div class="hld__msg hld__msg-${type}">${msg}</div>`)
+            $('.msg').length > 0 && $('.msg').remove()
+            let $msg = $(`<div class="msg msg-${type}">${msg}</div>`)
             $('body').append($msg)
             $msg.slideDown(200)
             setTimeout(() => { $msg.fadeOut(500) }, type == 'ok' ? 2000 : 5000)
@@ -282,7 +280,7 @@
         }
         /**
          * 读取值
-         * @method saveSetting
+         * @method getValue
          * @param {String} key
          */
         getValue(key) {
@@ -318,37 +316,37 @@
         }
         /**
          * 保存配置到本地
-         * @method saveSetting
+         * @method saveBasicSetting
          * @param {String} msg 自定义消息信息
          */
-        saveSetting(msg='保存配置成功，刷新页面生效') {
+        saveBasicSetting(msg='保存配置成功，刷新页面生效') {
             // 基础设置
             for (let k in this.setting.normal) {
-                $('input#hld__cb_' + k).length > 0 && (this.setting.normal[k] = $('input#hld__cb_' + k)[0].checked)
+                $('input#cb_' + k).length > 0 && (this.setting.normal[k] = $('input#cb_' + k)[0].checked)
             }
-            script.setValue('hld__yamibo_setting', JSON.stringify(this.setting.normal))
+            script.setValue('yamibo_setting', JSON.stringify(this.setting.normal))
             // 高级设置
             for (let k in this.setting.advanced) {
-                if ($('#hld__adv_' + k).length > 0) {
+                if ($('#adv_' + k).length > 0) {
                     const originalSetting = this.setting.original.find(s => s.type == 'advanced' && s.key == k)
                     const valueType = typeof originalSetting.default
-                    const inputType = $('#hld__adv_' + k)[0].nodeName
+                    const inputType = $('#adv_' + k)[0].nodeName
                     if (inputType == 'SELECT') {
-                        this.setting.advanced[k] = $('#hld__adv_' + k).val()
+                        this.setting.advanced[k] = $('#adv_' + k).val()
                     } else {
                         if (valueType == 'boolean') {
-                            this.setting.advanced[k] = $('#hld__adv_' + k)[0].checked
+                            this.setting.advanced[k] = $('#adv_' + k)[0].checked
                         }
                         if (valueType == 'number') {
-                            this.setting.advanced[k] = +$('#hld__adv_' + k).val()
+                            this.setting.advanced[k] = +$('#adv_' + k).val()
                         }
                         if (valueType == 'string') {
-                            this.setting.advanced[k] = $('#hld__adv_' + k).val()
+                            this.setting.advanced[k] = $('#adv_' + k).val()
                         }
                     }
                 }
             }
-            script.setValue('hld__yamibo_advanced_setting', JSON.stringify(this.setting.advanced))
+            script.setValue('yamibo_advanced_setting', JSON.stringify(this.setting.advanced))
             msg && this.popMsg(msg)
         }
         /**
@@ -358,7 +356,8 @@
         loadSetting() {
             // 基础设置
             try {
-                const settingStr = script.getValue('hld__yamibo_setting')
+                const settingStr = script.getValue('yamibo_setting')
+                console.log("yamibo_setting",settingStr);
                 if (settingStr) {
                     let localSetting = JSON.parse(settingStr)
                     for (let k in this.setting.normal) {
@@ -395,7 +394,7 @@
                     this.setting.normal = localSetting
                 }
                 // 高级设置
-                const advancedSettingStr = script.getValue('hld__yamibo_advanced_setting')
+                const advancedSettingStr = script.getValue('yamibo_advanced_setting')
                 if (advancedSettingStr) {
                     let localAdvancedSetting = JSON.parse(advancedSettingStr)
                     for (let k in this.setting.advanced) {
@@ -427,8 +426,8 @@
                 return str.substring(0, str.lastIndexOf('.'))
             }
             //检查更新
-            const cver = script.getValue('hld__yamibo_version')
-            script.setValue('hld__yamibo_version', GM_info.script.version)
+            const cver = script.getValue('yamibo_version')
+            script.setValue('yamibo_version', GM_info.script.version)
         }
         /**
          * 创建储存对象实例
@@ -463,8 +462,8 @@
         getInfo() {
             return {
                 version: GM_info.script.version,
-                author: 'HLD',
-                github: 'https://github.com/kisshang1993/NGA-BBS-Script',
+                author: 'ZAIYANGNANYUE',
+                github: 'https://github.com/FujinomiyaNeko981213/Yamibo-bbs-Script',
                 update: 'https://greasyfork.org/zh-CN/scripts/393991-nga%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C'
             }
         }
@@ -474,13 +473,13 @@
     try {
         // 设置面板
         GM_registerMenuCommand('设置面板', function () {
-            $('#hld__setting_cover').css('display', 'block')
+            $('#setting_cover').css('display', 'block')
             $('html, body').animate({scrollTop: 0}, 500)
         })
         // 清理缓存
         GM_registerMenuCommand('清理缓存', function () {
             if (window.confirm('此操作为清理Local Storage与IndexedDB部分缓存内容，不会清理配置\n\n继续请点击【确定】')) {
-                script.deleteValue('hld__yamibo_post_author')
+                script.deleteValue('yamibo_post_author')
                 localforage.clear()
                 alert('操作成功，请刷新页面重试')
             }
@@ -499,7 +498,7 @@
         // 反馈问题
         GM_registerMenuCommand('反馈问题', function () {
             if (window.confirm('如脚本运行失败而且修复后也无法运行，请反馈问题报告\n* 问题报告请包含使用的: [浏览器]，[脚本管理器]，[脚本版本]\n* 描述问题最好以图文并茂的形式\n* 如脚本运行失败，建议提供F12控制台的红色错误输出以辅助排查\n\n默认打开的为Greasy Fork的反馈页面，有能力最好去Github Issue反馈问题，可以获得优先处理\n\n即将打开反馈页面，继续请点击【确定】')) {
-                window.open('https://greasyfork.org/zh-CN/scripts/393991-nga%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C/feedback')
+                window.open('https://greasyfork.org/zh-CN/scripts/553252-yamibo%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C/feedback')
             }
         })
     } catch (e) {
@@ -520,31 +519,31 @@
         initFunc() {
             //设置面板
             let $panelDom = $(`
-            <div id="hld__setting_cover" class="animated zoomIn">
-                <div id="hld__setting_panel">
-                    <a href="javascript:void(0)" id="hld__setting_close" class="hld__setting-close" close-type="hide">×</a>
-                    <p class="hld__sp-title"><a title="更新地址" href="https://greasyfork.org/zh-CN/scripts/393991-nga%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C" target="_blank">yamibo优化摸鱼体验<span class="hld__script-info">v${script.getInfo().version}</span></a></p>
-                    <div class="hld__field">
-                        <p class="hld__sp-section">显示优化</p>
-                        <div id="hld__normal_left"></div>
+            <div id="setting_cover" class="animated zoomIn">
+                <div id="setting_panel">
+                    <a href="javascript:void(0)" id="setting_close" class="setting-close" close-type="hide">×</a>
+                    <p class="sp-title"><a title="更新地址" href="https://greasyfork.org/zh-CN/scripts/553252-yamibo%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C" target="_blank">yamibo优化摸鱼体验<span class="script-info">v${script.getInfo().version}</span></a></p>
+                    <div class="field">
+                        <p class="sp-section">显示优化</p>
+                        <div id="normal_left"></div>
                     </div>
-                    <div class="hld__field">
-                        <p class="hld__sp-section">功能增强</p>
-                        <div id="hld__normal_right"></div>
+                    <div class="field">
+                        <p class="sp-section">功能增强</p>
+                        <div id="normal_right"></div>
                     </div>
                     <div style="clear:both"></div>
-                    <div class="hld__advanced-setting">
-                        <button id="hld__advanced_button">+</button><span>高级设置</span>
-                        <div class="hld__advanced-setting-panel">
-                            <p><svg t="1590560820184" class="icon" viewBox="0 0 1040 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2738" width="200" height="200"><path d="M896.355855 975.884143 127.652332 975.884143c-51.575656 0-92.993974-19.771299-113.653503-54.238298-20.708648-34.515095-18.194384-79.5815 6.9022-123.5632L408.803663 117.885897c25.244964-44.376697 62.767556-69.77004 102.953813-69.77004 40.136116 0 77.658707 25.393343 103.002932 69.671803L1003.006873 798.131763c25.097608 44.030819 27.711132 89.049129 6.952342 123.514081C989.348806 956.159916 947.881368 975.884143 896.355855 975.884143L896.355855 975.884143 896.355855 975.884143 896.355855 975.884143 896.355855 975.884143zM511.805572 119.511931c-12.769838 0-27.414373 12.376888-39.298028 33.134655L84.656075 832.892451c-12.130272 21.350261-14.989389 40.530089-7.741311 52.611242 7.297197 12.08013 25.787316 19.033495 50.737568 19.033495l768.703523 0c24.997324 0 43.439348-6.903224 50.736545-19.033495 7.197936-12.031011 4.387937-31.210839-7.791453-52.5611L551.055504 152.646586C539.220968 131.888819 524.527314 119.511931 511.805572 119.511931L511.805572 119.511931 511.805572 119.511931 511.805572 119.511931 511.805572 119.511931zM512.004093 653.807726c-20.1182 0-36.488029-15.975856-36.488029-35.69906L475.516064 296.773124c0-19.723204 16.369829-35.698037 36.488029-35.698037 20.117177 0 36.485983 15.975856 36.485983 35.698037l0 321.335543C548.490076 637.832893 532.12127 653.807726 512.004093 653.807726L512.004093 653.807726 512.004093 653.807726 512.004093 653.807726zM511.757476 828.308039c31.359218 0 56.851822-24.950252 56.851822-55.717999s-25.491581-55.716976-56.851822-55.716976c-31.408337 0-56.851822 24.949228-56.851822 55.716976S480.349139 828.308039 511.757476 828.308039L511.757476 828.308039 511.757476 828.308039 511.757476 828.308039z" p-id="2739"></path></svg> 鼠标停留在<span class="hld__help" title="详细描述">选项文字</span>上可以显示详细描述，设置有误可能会导致插件异常或者无效！</p>
-                            <table id="hld__advanced_left"></table>
-                            <table id="hld__advanced_right"></table>
+                    <div class="advanced-setting">
+                        <button id="advanced_button">+</button><span>高级设置</span>
+                        <div class="advanced-setting-panel">
+                            <p><svg t="1590560820184" class="icon" viewBox="0 0 1040 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2738" width="200" height="200"><path d="M896.355855 975.884143 127.652332 975.884143c-51.575656 0-92.993974-19.771299-113.653503-54.238298-20.708648-34.515095-18.194384-79.5815 6.9022-123.5632L408.803663 117.885897c25.244964-44.376697 62.767556-69.77004 102.953813-69.77004 40.136116 0 77.658707 25.393343 103.002932 69.671803L1003.006873 798.131763c25.097608 44.030819 27.711132 89.049129 6.952342 123.514081C989.348806 956.159916 947.881368 975.884143 896.355855 975.884143L896.355855 975.884143 896.355855 975.884143 896.355855 975.884143 896.355855 975.884143zM511.805572 119.511931c-12.769838 0-27.414373 12.376888-39.298028 33.134655L84.656075 832.892451c-12.130272 21.350261-14.989389 40.530089-7.741311 52.611242 7.297197 12.08013 25.787316 19.033495 50.737568 19.033495l768.703523 0c24.997324 0 43.439348-6.903224 50.736545-19.033495 7.197936-12.031011 4.387937-31.210839-7.791453-52.5611L551.055504 152.646586C539.220968 131.888819 524.527314 119.511931 511.805572 119.511931L511.805572 119.511931 511.805572 119.511931 511.805572 119.511931 511.805572 119.511931zM512.004093 653.807726c-20.1182 0-36.488029-15.975856-36.488029-35.69906L475.516064 296.773124c0-19.723204 16.369829-35.698037 36.488029-35.698037 20.117177 0 36.485983 15.975856 36.485983 35.698037l0 321.335543C548.490076 637.832893 532.12127 653.807726 512.004093 653.807726L512.004093 653.807726 512.004093 653.807726 512.004093 653.807726zM511.757476 828.308039c31.359218 0 56.851822-24.950252 56.851822-55.717999s-25.491581-55.716976-56.851822-55.716976c-31.408337 0-56.851822 24.949228-56.851822 55.716976S480.349139 828.308039 511.757476 828.308039L511.757476 828.308039 511.757476 828.308039 511.757476 828.308039z" p-id="2739"></path></svg> 鼠标停留在<span class="help" title="详细描述">选项文字</span>上可以显示详细描述，设置有误可能会导致插件异常或者无效！</p>
+                            <table id="advanced_left"></table>
+                            <table id="advanced_right"></table>
                         </div>
                     </div>
-                    <div class="hld__buttons">
+                    <div class="buttons">
                         <span id="hld_setting_panel_buttons"></span>
                         <span>
-                            <button class="hld__btn" id="hld__save__data">保存设置</button>
+                            <button class="btn" id="save__data">保存设置</button>
                         </span>
                     </div>
                 </div>
@@ -552,13 +551,13 @@
             `)
             const insertDom = setting => {
                 if (setting.type === 'normal') {
-                    $panelDom.find(`#hld__normal_${setting.menu || 'left'}`).append(`
-                    <p><label ${setting.desc ? 'class="hld__help" help="'+setting.desc+'"' : ''}><input type="checkbox" id="hld__cb_${setting.key}"> ${setting.title || setting.key}${setting.shortCutCode ? '（快捷键切换[<b>'+script.getModule('ShortCutKeys').getCodeName(setting.rewriteShortCutCode || setting.shortCutCode)+'</b>]）' : ''}</label></p>
+                    $panelDom.find(`#normal_${setting.menu || 'left'}`).append(`
+                    <p><label ${setting.desc ? 'class="help" help="'+setting.desc+'"' : ''}><input type="checkbox" id="cb_${setting.key}"> ${setting.title || setting.key}${setting.shortCutCode ? '（快捷键切换[<b>'+script.getModule('ShortCutKeys').getCodeName(setting.rewriteShortCutCode || setting.shortCutCode)+'</b>]）' : ''}</label></p>
                     `)
                     if (setting.extra) {
-                        $panelDom.find(`#hld__cb_${setting.key}`).attr('enable', `hld__${setting.key}_${setting.extra.mode || 'fold'}`)
-                        $panelDom.find(`#hld__normal_${setting.menu || 'left'}`).append(`
-                        <div class="hld__sp-${setting.extra.mode || 'fold'}" id="hld__${setting.key}_${setting.extra.mode || 'fold'}" data-id="hld__${setting.key}">
+                        $panelDom.find(`#cb_${setting.key}`).attr('enable', `${setting.key}_${setting.extra.mode || 'fold'}`)
+                        $panelDom.find(`#normal_${setting.menu || 'left'}`).append(`
+                        <div class="sp-${setting.extra.mode || 'fold'}" id="${setting.key}_${setting.extra.mode || 'fold'}" data-id="${setting.key}">
                             <p><button id="${setting.extra.id}">${setting.extra.label}</button></p>
                         </div>
                         `)
@@ -568,10 +567,10 @@
                     let formItem = ''
                     const valueType = typeof setting.default
                     if (valueType === 'boolean') {
-                        formItem = `<input type="checkbox" id="hld__adv_${setting.key}">`
+                        formItem = `<input type="checkbox" id="adv_${setting.key}">`
                     }
                     if (valueType === 'number') {
-                        formItem = `<input type="number" id="hld__adv_${setting.key}">`
+                        formItem = `<input type="number" id="adv_${setting.key}">`
                     }
                     if (valueType === 'string') {
                         if (setting.options) {
@@ -579,14 +578,14 @@
                             for (const option of setting.options) {
                                 t += `<option value="${option.value}">${option.label}</option>`
                             }
-                            formItem = `<select id="hld__adv_${setting.key}">${t}</select>`
+                            formItem = `<select id="adv_${setting.key}">${t}</select>`
                         } else {
-                            formItem = `<input type="text" id="hld__adv_${setting.key}">`
+                            formItem = `<input type="text" id="adv_${setting.key}">`
                         }
                     }
-                    $panelDom.find(`#hld__advanced_${setting.menu || 'left'}`).append(`
+                    $panelDom.find(`#advanced_${setting.menu || 'left'}`).append(`
                     <tr>
-                        <td><span class="hld__help" help="${setting.desc || ''}">${setting.title || setting.key}</span></td>
+                        <td><span class="help" help="${setting.desc || ''}">${setting.title || setting.key}</span></td>
                         <td>${formItem}</td>
                     </tr>`)
                 }
@@ -605,28 +604,28 @@
              * Bind:Mouseover Mouseout
              * 提示信息Tips
              */
-            $('body').on('mouseover', '.hld__help', function(e){
+            $('body').on('mouseover', '.help', function(e){
                 if (!$(this).attr('help')) return
-                const $help = $(`<div class="hld__help-tips">${$(this).attr('help').replace(/\n/g, '<br>')}</div>`)
+                const $help = $(`<div class="help-tips">${$(this).attr('help').replace(/\n/g, '<br>')}</div>`)
                 $help.css({
                     top: ($(this).offset().top + $(this).height() + 5) + 'px',
                     left: $(this).offset().left + 'px'
                 })
                 $('body').append($help)
-            }).on('mouseout', '.hld__help', ()=>$('.hld__help-tips').remove())
+            }).on('mouseout', '.help', ()=>$('.help-tips').remove())
             $('body').append($panelDom)
             //本地恢复设置
             //基础设置
             for (let k in script.setting.normal) {
-                if ($('#hld__cb_' + k).length > 0) {
-                    $('#hld__cb_' + k)[0].checked = script.setting.normal[k]
-                    const enableDomID = $('#hld__cb_' + k).attr('enable')
+                if ($('#cb_' + k).length > 0) {
+                    $('#cb_' + k)[0].checked = script.setting.normal[k]
+                    const enableDomID = $('#cb_' + k).attr('enable')
                     if (enableDomID) {
                         script.setting.normal[k] ? $('#' + enableDomID).show() : $('#' + enableDomID).hide()
                         $('#' + enableDomID).find('input').each(function () {
                             $(this).val() == script.setting.normal[$(this).attr('name').substring(8)] && ($(this)[0].checked = true)
                         })
-                        $('#hld__cb_' + k).on('click', function () {
+                        $('#cb_' + k).on('click', function () {
                             $(this)[0].checked ? $('#' + enableDomID).slideDown() : $('#' + enableDomID).slideUp()
                         })
                     }
@@ -634,13 +633,13 @@
             }
             //高级设置
             for (let k in script.setting.advanced) {
-                if ($('#hld__adv_' + k).length > 0) {
+                if ($('#adv_' + k).length > 0) {
                     const valueType = typeof script.setting.advanced[k]
                     if (valueType == 'boolean') {
-                        $('#hld__adv_' + k)[0].checked = script.setting.advanced[k]
+                        $('#adv_' + k)[0].checked = script.setting.advanced[k]
                     }
                     if (valueType == 'number' || valueType == 'string') {
-                        $('#hld__adv_' + k).val(script.setting.advanced[k])
+                        $('#adv_' + k).val(script.setting.advanced[k])
                     }
                 }
             }
@@ -648,12 +647,12 @@
              * Bind:Click
              * 设置面板-展开切换高级设置
              */
-            $('body').on('click', '#hld__advanced_button', function () {
-                if ($('.hld__advanced-setting-panel').is(':hidden')) {
-                    $('.hld__advanced-setting-panel').css('display', 'flex')
+            $('body').on('click', '#advanced_button', function () {
+                if ($('.advanced-setting-panel').is(':hidden')) {
+                    $('.advanced-setting-panel').css('display', 'flex')
                     $(this).text('-')
                 } else {
-                    $('.hld__advanced-setting-panel').css('display', 'none')
+                    $('.advanced-setting-panel').css('display', 'none')
                     $(this).text('+')
                 }
             })
@@ -661,7 +660,7 @@
              * Bind:Click
              * 关闭面板（通用）
              */
-            $('body').on('click', '.hld__list-panel .hld__setting-close', function () {
+            $('body').on('click', '.list-panel .setting-close', function () {
                 if ($(this).attr('close-type') == 'hide') {
                     $(this).parent().hide()
                 } else {
@@ -672,25 +671,25 @@
              * Bind:Click
              * 保存配置
              */
-            $('body').on('click', '#hld__save__data', () => {
-                script.saveSetting()
-                $('#hld__setting_cover').fadeOut(200)
+            $('body').on('click', '#save__data', () => {
+                script.saveBasicSetting()
+                $('#setting_cover').fadeOut(200)
             })
         },
         renderAlwaysFunc() {
-            if($('.hld__setting-box').length == 0) {
-                $('#startmenu > tbody > tr > td.last').append('<div><div class="item hld__setting-box"></div></div>')
-                let $entry = $('<a id="hld__setting" title="打开yamibo优化摸鱼插件设置面板">yamibo优化摸鱼插件设置</a>')
+            if($('.setting-box').length == 0) {
+                $('#startmenu > tbody > tr > td.last').append('<div><div class="item setting-box"></div></div>')
+                let $entry = $('<a id="setting" title="打开yamibo优化摸鱼插件设置面板">yamibo优化摸鱼插件设置</a>')
                 $entry.click(()=>{
-                    $('#hld__setting_cover').css('display', 'block')
+                    $('#setting_cover').css('display', 'block')
                     $('html, body').animate({scrollTop: 0}, 500)
                 })
-                $('#hld__setting_close').click(()=>$('#hld__setting_cover').fadeOut(200))
-                $('.hld__setting-box').append($entry)
+                $('#setting_close').click(()=>$('#setting_cover').fadeOut(200))
+                $('.setting-box').append($entry)
             }
         },
         addButton(button) {
-            const $button = $(`<button class="hld__btn" id="${button.id}" title="${button.desc}">${button.title}</button>`)
+            const $button = $(`<button class="btn" id="${button.id}" title="${button.desc}">${button.title}</button>`)
             if (typeof button.click == 'function') {
                 $button.on('click', function() {
                     button.click($(this))
@@ -709,51 +708,51 @@
         @keyframes zoomIn {from {opacity:0;-webkit-transform:scale3d(0.3,0.3,0.3);transform:scale3d(0.3,0.3,0.3);}50% {opacity:1;}}
         @keyframes bounce {from,20%,53%,80%,to {-webkit-animation-timing-function:cubic-bezier(0.215,0.61,0.355,1);animation-timing-function:cubic-bezier(0.215,0.61,0.355,1);-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0);}40%,43% {-webkit-animation-timing-function:cubic-bezier(0.755,0.05,0.855,0.06);animation-timing-function:cubic-bezier(0.755,0.05,0.855,0.06);-webkit-transform:translate3d(0,-30px,0);transform:translate3d(0,-30px,0);}70% {-webkit-animation-timing-function:cubic-bezier(0.755,0.05,0.855,0.06);animation-timing-function:cubic-bezier(0.755,0.05,0.855,0.06);-webkit-transform:translate3d(0,-15px,0);transform:translate3d(0,-15px,0);}90% {-webkit-transform:translate3d(0,-4px,0);transform:translate3d(0,-4px,0);}}
         @keyframes fadeInUp {from {opacity:0;-webkit-transform:translate3d(-50%,100%,0);transform:translate3d(-50%,100%,0);}to {opacity:1;-webkit-transform:translate3d(-50%,0,0);transform:translate3d(-50%,0,0);}}
-        .hld__msg{display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);color:#fff;text-align:center;z-index:99996;padding:10px 30px 10px 45px;font-size:16px;border-radius:10px;background-image:url("${SVG_ICON_MSG}");background-size:25px;background-repeat:no-repeat;background-position:15px}
-        .hld__msg a{color:#fff;text-decoration: underline;}
-        .hld__msg-ok{background:#4bcc4b}
-        .hld__msg-err{background:#c33}
-        .hld__msg-warn{background:#FF9900}
-        .hld__flex{display:flex;}
-        .hld__float-left{float: left;}
+        .msg{display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);color:#fff;text-align:center;z-index:99996;padding:10px 30px 10px 45px;font-size:16px;border-radius:10px;background-image:url("${SVG_ICON_MSG}");background-size:25px;background-repeat:no-repeat;background-position:15px}
+        .msg a{color:#fff;text-decoration: underline;}
+        .msg-ok{background:#4bcc4b}
+        .msg-err{background:#c33}
+        .msg-warn{background:#FF9900}
+        .flex{display:flex;}
+        .float-left{float: left;}
         .clearfix {clear: both;}
-        #hld__noti_container {position:fixed;top:10px;left:10px;z-index:99;}
-        .hld__noti-msg {display:none;padding:10px 20px;font-size:14px;font-weight:bold;color:#fff;margin-bottom:10px;background:rgba(0,0,0,0.6);border-radius:10px;cursor:pointer;}
-        .hld__btn-groups {display:flex;justify-content:center !important;margin-top:10px;}
-        button.hld__btn {padding:3px 8px;border:1px solid #591804;background:#fff8e7;color:#591804;}
-        button.hld__btn:hover {background:#591804;color:#fff0cd;}
-        button.hld__btn[disabled] {opacity:.5;}
-        #hld__updated {position:fixed;top:20px;right:20px;width:230px;padding:10px;border-radius:5px;box-shadow:0 0 15px #666;border:1px solid #591804;background:#fff8e7;z-index: 9999;}
-        #hld__updated .hld__readme {text-decoration:underline;color:#591804;}
-        .hld__script-info {margin-left:4px;font-size:70%;color:#666;}
-        #hld__setting {color:#6666CC;cursor:pointer;}
-        #hld__setting_cover {display:none;padding-top: 70px;position:absolute;top:0;left:0;right:0;bottom:0;z-index:999;}
-        #hld__setting_panel {position:relative;background:#fff8e7;width:600px;left: 50%;transform: translateX(-50%);padding:15px 20px;border-radius:10px;box-shadow:0 0 10px #666;border:1px solid #591804;}
-        #hld__setting_panel > div.hld__field {float:left;width:50%;}
-        #hld__setting_panel p {margin-bottom:10px;}
-        #hld__setting_panel .hld__sp-title {font-size:15px;font-weight:bold;text-align:center;}
-        #hld__setting_panel .hld__sp-section {font-weight:bold;margin-top:20px;}
-        .hld__setting-close {position:absolute;top:5px;right:5px;padding:3px 6px;background:#fff0cd;color:#591804;transition:all .2s ease;cursor:pointer;border-radius:4px;text-decoration:none;z-index:9999;}
-        .hld__setting-close:hover {background:#591804;color:#fff0cd;text-decoration:none;}
-        #hld__setting_panel button {transition:all .2s ease;cursor:pointer;}
-        .hld__advanced-setting {border-top: 1px solid #e0c19e;border-bottom: 1px solid #e0c19e;padding: 3px 0;margin-top:25px;}
-        .hld__advanced-setting >span {font-weight:bold}
-        .hld__advanced-setting >button {padding: 0px;margin-right:5px;width: 18px;text-align: center;}
-        .hld__advanced-setting-panel {display:none;padding:5px 0;flex-wrap: wrap;}
-        .hld__advanced-setting-panel>p {width:100%;}
-        .hld__advanced-setting-panel>table {width:50%;}
-        .hld__advanced-setting-panel>p {margin: 7px 0 !important;font-weight:bold;}
-        .hld__advanced-setting-panel>p svg {height:16px;width:16px;vertical-align: top;margin-right:3px;}
-        .hld__advanced-setting-panel>table td {padding-right:10px}
-        .hld__advanced-setting-panel input[type=text],.hld__advanced-setting-panel input[type=number] {width:80px}
-        .hld__advanced-setting-panel input[type=number] {border: 1px solid #e6c3a8;box-shadow: 0 0 2px 0 #7c766d inset;border-radius: 0.25em;}
-        .hld__help {cursor:help;text-decoration: underline;}
-        .hld__buttons {clear:both;display:flex;justify-content:space-between;padding-top:15px;}
-        button.hld__btn {padding:3px 8px;border:1px solid #591804;background:#fff8e7;color:#591804;}
-        button.hld__btn:hover {background:#591804;color:#fff0cd;}
-        .hld__sp-fold {padding-left:23px;}
-        .hld__sp-fold .hld__f-title {font-weight:bold;}
-        .hld__help-tips {position: absolute;padding: 5px 10px;background: rgba(0,0,0,.8);color: #FFF;border-radius: 5px;z-index: 9999;}
+        #noti_container {position:fixed;top:10px;left:10px;z-index:99;}
+        .noti-msg {display:none;padding:10px 20px;font-size:14px;font-weight:bold;color:#fff;margin-bottom:10px;background:rgba(0,0,0,0.6);border-radius:10px;cursor:pointer;}
+        .btn-groups {display:flex;justify-content:center !important;margin-top:10px;}
+        button.btn {padding:3px 8px;border:1px solid #591804;background:#fff8e7;color:#591804;}
+        button.btn:hover {background:#591804;color:#fff0cd;}
+        button.btn[disabled] {opacity:.5;}
+        #updated {position:fixed;top:20px;right:20px;width:230px;padding:10px;border-radius:5px;box-shadow:0 0 15px #666;border:1px solid #591804;background:#fff8e7;z-index: 9999;}
+        #updated .readme {text-decoration:underline;color:#591804;}
+        .script-info {margin-left:4px;font-size:70%;color:#666;}
+        #setting {color:#6666CC;cursor:pointer;}
+        #setting_cover {display:none;padding-top: 70px;position:absolute;top:0;left:0;right:0;bottom:0;z-index:999;}
+        #setting_panel {position:relative;background:#fff8e7;width:600px;left: 50%;transform: translateX(-50%);padding:15px 20px;border-radius:10px;box-shadow:0 0 10px #666;border:1px solid #591804;}
+        #setting_panel > div.field {float:left;width:50%;}
+        #setting_panel p {margin-bottom:10px;}
+        #setting_panel .sp-title {font-size:15px;font-weight:bold;text-align:center;}
+        #setting_panel .sp-section {font-weight:bold;margin-top:20px;}
+        .setting-close {position:absolute;top:5px;right:5px;padding:3px 6px;background:#fff0cd;color:#591804;transition:all .2s ease;cursor:pointer;border-radius:4px;text-decoration:none;z-index:9999;}
+        .setting-close:hover {background:#591804;color:#fff0cd;text-decoration:none;}
+        #setting_panel button {transition:all .2s ease;cursor:pointer;}
+        .advanced-setting {border-top: 1px solid #e0c19e;border-bottom: 1px solid #e0c19e;padding: 3px 0;margin-top:25px;}
+        .advanced-setting >span {font-weight:bold}
+        .advanced-setting >button {padding: 0px;margin-right:5px;width: 18px;text-align: center;}
+        .advanced-setting-panel {display:none;padding:5px 0;flex-wrap: wrap;}
+        .advanced-setting-panel>p {width:100%;}
+        .advanced-setting-panel>table {width:50%;}
+        .advanced-setting-panel>p {margin: 7px 0 !important;font-weight:bold;}
+        .advanced-setting-panel>p svg {height:16px;width:16px;vertical-align: top;margin-right:3px;}
+        .advanced-setting-panel>table td {padding-right:10px}
+        .advanced-setting-panel input[type=text],.advanced-setting-panel input[type=number] {width:80px}
+        .advanced-setting-panel input[type=number] {border: 1px solid #e6c3a8;box-shadow: 0 0 2px 0 #7c766d inset;border-radius: 0.25em;}
+        .help {cursor:help;text-decoration: underline;}
+        .buttons {clear:both;display:flex;justify-content:space-between;padding-top:15px;}
+        button.btn {padding:3px 8px;border:1px solid #591804;background:#fff8e7;color:#591804;}
+        button.btn:hover {background:#591804;color:#fff0cd;}
+        .sp-fold {padding-left:23px;}
+        .sp-fold .f-title {font-weight:bold;}
+        .help-tips {position: absolute;padding: 5px 10px;background: rgba(0,0,0,.8);color: #FFF;border-radius: 5px;z-index: 9999;}
         `
     }
     /**
@@ -779,7 +778,7 @@
             const _this = this
             // 添加到配置面板的设置入口
             script.getModule('SettingPanel').addButton({
-                id: 'hld__shortcut_manage',
+                id: 'shortcut_manage',
                 title: '编辑快捷键',
                 desc: '编辑快捷键'
             })
@@ -826,22 +825,22 @@
              * Bind:Click
              * 快捷键编辑面板
              */
-            $('body').on('click', '#hld__shortcut_manage', () => {
-                if($('#hld__shortcut_panel').length > 0) return
-                let $shortcutPanel = $(`<div id="hld__shortcut_panel" class="hld__list-panel animated fadeInUp">
-                <a href="javascript:void(0)" class="hld__setting-close">×</a>
+            $('body').on('click', '#shortcut_manage', () => {
+                if($('#shortcut_panel').length > 0) return
+                let $shortcutPanel = $(`<div id="shortcut_panel" class="list-panel animated fadeInUp">
+                <a href="javascript:void(0)" class="setting-close">×</a>
                 <div>
-                <div><p><b>编辑快捷键</b></p><div class="hld__float-left"><table class="hld__table hld__table-keyword"><thead><tr><td>功能</td><td width="60">快捷键</td></tr></thead>
-                <tbody></tbody></table></div><div class="hld__float-left hld__shortcut-desc"><p><b>支持的快捷键范围</b></p><p>键盘 <code>A</code>~<code>Z</code></p><p>左箭头 <code>LEFT</code></p><p>右箭头 <code>RIGHT</code></p><p>上箭头 <code>UP</code></p><p>下箭头 <code>DOWN</code></p><p><i>* 留空则取消快捷键</i></p><br><p>如按键异常请尝试重置按键</p>
+                <div><p><b>编辑快捷键</b></p><div class="float-left"><table class="table table-keyword"><thead><tr><td>功能</td><td width="60">快捷键</td></tr></thead>
+                <tbody></tbody></table></div><div class="float-left shortcut-desc"><p><b>支持的快捷键范围</b></p><p>键盘 <code>A</code>~<code>Z</code></p><p>左箭头 <code>LEFT</code></p><p>右箭头 <code>RIGHT</code></p><p>上箭头 <code>UP</code></p><p>下箭头 <code>DOWN</code></p><p><i>* 留空则取消快捷键</i></p><br><p>如按键异常请尝试重置按键</p>
                 </div>
                 <div class="clearfix"></div></div>
                 </div>
-                <div class="hld__btn-groups">
-                <button class="hld__btn" id="hld__reset_shortcut">重置按键</button>
-                <button class="hld__btn" id="hld__save_shortcut">保存快捷键</button>
+                <div class="btn-groups">
+                <button class="btn" id="reset_shortcut">重置按键</button>
+                <button class="btn" id="save_shortcut">保存快捷键</button>
                 </div>
                 </div>`)
-                const insertDom = setting => $shortcutPanel.find('.hld__table tbody').append(`<tr><td>${setting.title || setting.key}</td><td><input type="text" value="${this.getCodeName(setting.rewriteShortCutCode || setting.shortCutCode)}"></td></tr>`)
+                const insertDom = setting => $shortcutPanel.find('.table tbody').append(`<tr><td>${setting.title || setting.key}</td><td><input type="text" value="${this.getCodeName(setting.rewriteShortCutCode || setting.shortCutCode)}"></td></tr>`)
                 for (const module of script.modules) {
                     if (module.setting && module.setting.shortCutCode) {
                         insertDom(module.setting)
@@ -854,13 +853,13 @@
                         }
                     }
                 }
-                $('#hld__setting_cover').append($shortcutPanel)
+                $('#setting_cover').append($shortcutPanel)
             })
             /**
              * Bind:Click
              * 重置快捷键
              */
-            $('body').on('click', '#hld__reset_shortcut', () => {
+            $('body').on('click', '#reset_shortcut', () => {
                 const defaultShortcut = []
                 for (const module of script.modules) {
                     if (module.setting && module.setting.shortCutCode) {
@@ -873,17 +872,17 @@
                     }
                 }
                 script.setting.normal.shortcutKeys = defaultShortcut
-                script.saveSetting('重置按键成功，刷新页面生效')
-                $('#hld__shortcut_panel').remove()
+                script.saveBasicSetting('重置按键成功，刷新页面生效')
+                $('#shortcut_panel').remove()
             })
             /**
              * Bind:Click
              * 保存快捷键
              */
-            $('body').on('click', '#hld__save_shortcut', () => {
+            $('body').on('click', '#save_shortcut', () => {
                 const _this = this
                 let shortcutKeys = []
-                $('.hld__table tbody>tr').each(function () {
+                $('.table tbody>tr').each(function () {
                     const v = $(this).find('input').val().trim().toUpperCase()
                     if (v == '') {
                         shortcutKeys.push(-1)
@@ -895,8 +894,8 @@
                 })
                 if (shortcutKeys.length != script.setting.normal.shortcutKeys.length) return
                 script.setting.normal.shortcutKeys = shortcutKeys
-                script.saveSetting('保存按键成功，刷新页面生效')
-                $('#hld__shortcut_panel').remove()
+                script.saveBasicSetting('保存按键成功，刷新页面生效')
+                $('#shortcut_panel').remove()
             })
         },
         getCodeName(val, valType='code') {
@@ -924,20 +923,20 @@
         },
         style: `
         code {padding:2px 4px;font-size:90%;font-weight:bold;color:#c7254e;background-color:#f9f2f4;border-radius:4px;}
-        .hld__list-panel {position:absolute;top: 100px;left: 50%;background:#fff8e7;padding:15px 20px;border-radius:10px;box-shadow:0 0 10px #666;border:1px solid #591804;z-index:9999;}
-        .hld__list-panel .hld__list-c {width:45%;}
-        .hld__list-panel .hld__list-c textarea {box-sizing:border-box;padding:0;margin:0;height:200px;width:100%;resize:none;}
-        .hld__list-panel .hld__list-desc {margin-top:5px;font-size:9px;color:#666;cursor:help;text-decoration: underline;}
-        .hld__list-panel .hld__list-c > p:first-child {font-weight:bold;font-size:14px;margin-bottom:10px;}
-        .hld__table-keyword {margin-top:10px;width:200px;}
-        .hld__table-keyword tr td:last-child {text-align:center;}
-        .hld__table-keyword input[type=text] {width:48px;text-transform:uppercase;text-align:center;}
-        .hld__table{table-layout:fixed;border-top:1px solid #ead5bc;border-left:1px solid #ead5bc}
-        .hld__table-banlist-buttons{margin-top:10px}
-        .hld__table thead{background:#591804;border:1px solid #591804;color:#fff}
-        .hld__table td,.hld__table th{padding:3px 5px;border-bottom:1px solid #ead5bc;border-right:1px solid #ead5bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .hld__shortcut-desc {width:120px;margin-left:20px;padding-top:6px}
-        .hld__shortcut-desc p {margin-bottom:5px;}
+        .list-panel {position:absolute;top: 100px;left: 50%;background:#fff8e7;padding:15px 20px;border-radius:10px;box-shadow:0 0 10px #666;border:1px solid #591804;z-index:9999;}
+        .list-panel .list-c {width:45%;}
+        .list-panel .list-c textarea {box-sizing:border-box;padding:0;margin:0;height:200px;width:100%;resize:none;}
+        .list-panel .list-desc {margin-top:5px;font-size:9px;color:#666;cursor:help;text-decoration: underline;}
+        .list-panel .list-c > p:first-child {font-weight:bold;font-size:14px;margin-bottom:10px;}
+        .table-keyword {margin-top:10px;width:200px;}
+        .table-keyword tr td:last-child {text-align:center;}
+        .table-keyword input[type=text] {width:48px;text-transform:uppercase;text-align:center;}
+        .table{table-layout:fixed;border-top:1px solid #ead5bc;border-left:1px solid #ead5bc}
+        .table-banlist-buttons{margin-top:10px}
+        .table thead{background:#591804;border:1px solid #591804;color:#fff}
+        .table td,.table th{padding:3px 5px;border-bottom:1px solid #ead5bc;border-right:1px solid #ead5bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .shortcut-desc {width:120px;margin-left:20px;padding-top:6px}
+        .shortcut-desc p {margin-bottom:5px;}
 
         `
     }
@@ -957,7 +956,7 @@
             const _this = this
             // 在设置面板上添加按钮
             script.getModule('SettingPanel').addButton({
-                id: 'hld__backup_panel',
+                id: 'backup_panel',
                 title: '导入/导出',
                 desc: '导入/导出配置字符串，包含设置，黑名单，标记名单等等'
             })
@@ -965,76 +964,76 @@
              * Bind:Click
              * 导入导出面板
              */
-            $('body').on('click', '#hld__backup_panel', function () {
-                if($('#hld__export_panel').length > 0) return
-                $('#hld__setting_cover').append(`
-                    <div id="hld__export_panel" class="hld__list-panel animated fadeInUp">
-                        <a href="javascript:void(0)" class="hld__setting-close">×</a>
-                        <div class="hld__ep-container">
+            $('body').on('click', '#backup_panel', function () {
+                if($('#export_panel').length > 0) return
+                $('#setting_cover').append(`
+                    <div id="export_panel" class="list-panel animated fadeInUp">
+                        <a href="javascript:void(0)" class="setting-close">×</a>
+                        <div class="ep-container">
                             <div>
                                 <p><b>选择导出的设置</b></p>
-                                <div id="hld__export_panel_cb">
-                                    <p><label><input type="checkbox" id="hld__cb_export_setting" checked="checked"> 配置</label></p>
+                                <div id="export_panel_cb">
+                                    <p><label><input type="checkbox" id="cb_export_setting" checked="checked"> 配置</label></p>
                                 </div>
                                 <br>
-                                <p><button id="hld__export__data">导出</button> <button id="hld__import__data">导入</button></p>
+                                <p><button id="export__data">导出</button> <button id="import__data">导入</button></p>
                             </div>
                             <div>
                                 <p>
-                                    <b class="hld__help" help="【导出】\n选择要导出的内容，点击导出，复制以下字符串用于备份，分享等\n【导入】\n将字符串复制到以下输入框中，点击导入，将会自动导入字符串中包含的内容">字符串</b>
-                                    <label><input type="checkbox" id="hld__cb_export_encode" checked="checked"> Base64编码</label>
+                                    <b class="help" help="【导出】\n选择要导出的内容，点击导出，复制以下字符串用于备份，分享等\n【导入】\n将字符串复制到以下输入框中，点击导入，将会自动导入字符串中包含的内容">字符串</b>
+                                    <label><input type="checkbox" id="cb_export_encode" checked="checked"> Base64编码</label>
                                 </p>
-                                <textarea id="hld__export_str" rows="9"></textarea>
+                                <textarea id="export_str" rows="9"></textarea>
                                 <p><a href="https://greasyfork.org/zh-CN/scripts?q=NGA%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C%E6%8F%92%E4%BB%B6" target="_blank">使用WebDAV进行配置同步</a></p>
                             </div>
                         </div>
-                        <div><p id="hld__export_msg"></p></div>
+                        <div><p id="export_msg"></p></div>
                     </div>
                 `)
                 // 加载其他模组备份项
                 for (const item of _this.backupItems) {
-                    $('#hld__export_panel_cb').append(`
-                    <p><label><input type="checkbox" id="hld__cb_export_${item.writeKey}" checked="checked"> ${item.title}</label></p>
+                    $('#export_panel_cb').append(`
+                    <p><label><input type="checkbox" id="cb_export_${item.writeKey}" checked="checked"> ${item.title}</label></p>
                     `)
                 }
                 /**
                  * Bind:Click
                  * 导出配置
                  */
-                $('#hld__export__data').click(function(){
+                $('#export__data').click(function(){
                     let exportItems = []
                     // 基础配置
-                    if ($('#hld__cb_export_setting').prop('checked')) {
+                    if ($('#cb_export_setting').prop('checked')) {
                         exportItems.push('setting')
                     }
                     // 其他模组备份项
                     for (const item of _this.backupItems) {
-                        const $c = $(`#hld__cb_export_${item.writeKey}`)
+                        const $c = $(`#cb_export_${item.writeKey}`)
                         if ($c.length > 0 && $c.prop('checked')) {
                             exportItems.push(item.writeKey)
                         }
                     }
                     if (Object.keys(exportItems).length == 0) {
-                        $('#hld__export_msg').html('<span style="color:#CC0000">没有选择任何项目可供导出！</span>')
+                        $('#export_msg').html('<span style="color:#CC0000">没有选择任何项目可供导出！</span>')
                         return
                     }
-                    const backupB64 = _this.export(exportItems, $('#hld__cb_export_encode').prop('checked'))
-                    $('#hld__export_str').val(backupB64)
-                    $('#hld__export_msg').html(`<span style="color:#009900">导出成功(${_this.calculateSize(backupB64.length)})，请复制右侧字符串以备份</span>`)
+                    const backupB64 = _this.export(exportItems, $('#cb_export_encode').prop('checked'))
+                    $('#export_str').val(backupB64)
+                    $('#export_msg').html(`<span style="color:#009900">导出成功(${_this.calculateSize(backupB64.length)})，请复制右侧字符串以备份</span>`)
                 })
                 /**
                  * Bind:Click
                  * 导入配置
                  */
-                $('#hld__import__data').click(function(){
-                    const dataStr = $('#hld__export_str').val()
+                $('#import__data').click(function(){
+                    const dataStr = $('#export_str').val()
                     if (dataStr) {
                         try {
-                            const importStatus = _this.import(dataStr, $('#hld__cb_export_encode').prop('checked'))
-                            importStatus && $('#hld__export_msg').html('<span style="color:#009900">导入成功，刷新浏览器以生效</span>')
+                            const importStatus = _this.import(dataStr, $('#cb_export_encode').prop('checked'))
+                            importStatus && $('#export_msg').html('<span style="color:#009900">导入成功，刷新浏览器以生效</span>')
                         } catch (err){
                             script.printLog(`JSON解析失败: ${err}`)
-                            $('#hld__export_msg').html('<span style="color:#CC0000">字符串有误，解析失败！</span>')
+                            $('#export_msg').html('<span style="color:#CC0000">字符串有误，解析失败！</span>')
                         }
                     }
                 })
@@ -1089,7 +1088,7 @@
             const currentVer = script.getInfo().version
             const objVer = this.vstr2num(obj.ver)
             if (objVer != 0 && objVer > this.vstr2num(currentVer)) {
-                script.popMsg(`此配置是由更高版本(v${obj.ver})的脚本导出，请升级您的脚本 <a title="更新地址" href="https://greasyfork.org/zh-CN/scripts/393991-nga%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C" target="_blank">[脚本地址]</a>`, 'warn')
+                script.popMsg(`此配置是由更高版本(v${obj.ver})的脚本导出，请升级您的脚本 <a title="更新地址" href="https://greasyfork.org/zh-CN/scripts/553252-yamibo%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C" target="_blank">[脚本地址]</a>`, 'warn')
                 return
             }
             if (objVer != 0 && objVer < this.vstr2num(unsupported)) {
@@ -1101,14 +1100,14 @@
             if (Object.keys(obj).includes('setting')) {
                 obj.setting && (script.setting.normal = obj.setting)
                 obj.advanced_setting && (script.setting.advanced = obj.advanced_setting)
-                script.setValue('hld__yamibo_setting', JSON.stringify(script.setting.normal))
-                script.setValue('hld__yamibo_advanced_setting', JSON.stringify(script.setting.advanced))
+                script.setValue('yamibo_setting', JSON.stringify(script.setting.normal))
+                script.setValue('yamibo_advanced_setting', JSON.stringify(script.setting.advanced))
             }
             // 其他模组备份项
             for (const item of this.backupItems) {
                 if (Object.keys(obj).includes(item.writeKey)) {
                     item.module[item.valueKey] = obj[item.writeKey]
-                    script.setValue(`hld__yamibo_${item.writeKey}`, JSON.stringify(obj[item.writeKey]))
+                    script.setValue(`yamibo_${item.writeKey}`, JSON.stringify(obj[item.writeKey]))
                 }
             }
             script.popMsg('导入成功，刷新页面生效')
@@ -1126,10 +1125,10 @@
             }
         },
         style: `
-        .hld__ep-container{display:flex;width:300px;margin-bottom: 7px;}
-        .hld__ep-container p {margin-bottom:10px;}
-        .hld__ep-container >div{width:50%;}
-        .hld__ep-container textarea {width: 100%;padding:0;margin:0;resize:none;}
+        .ep-container{display:flex;width:300px;margin-bottom: 7px;}
+        .ep-container p {margin-bottom:10px;}
+        .ep-container >div{width:50%;}
+        .ep-container textarea {width: 100%;padding:0;margin:0;resize:none;}
         `
     }
     /**
@@ -1145,7 +1144,7 @@
              * 打赏
              */
             script.getModule('SettingPanel').addButton({
-                id: 'hld__reward',
+                id: 'reward',
                 title: '<span style="margin-right:3px">¥</span>赏',
                 desc: '好活当赏'
             })
@@ -1153,20 +1152,20 @@
              * Bind:Click
              * 打赏面板
              */
-            $('body').on('click', '#hld__reward', function () {
-                $('#hld__setting_cover').append(`
-                <div class="hld__list-panel hld__reward-panel animated fadeInUp">
-                    <a href="javascript:void(0)" class="hld__setting-close">×</a>
-                    <div class="hld__reward-info">
+            $('body').on('click', '#reward', function () {
+                $('#setting_cover').append(`
+                <div class="list-panel reward-panel animated fadeInUp">
+                    <a href="javascript:void(0)" class="setting-close">×</a>
+                    <div class="reward-info">
                         <p><b>喜欢此脚本请可以去作者<a href="${script.getInfo().github}" target="_blank"><b>Github</b></a>点个⭐️</p>
-                        <p>如果觉得脚本好用<span class="hld__delete-line">摸到鱼了</span>，也可以请作者喝杯☕意思意思，打多少零看缘分😎</p>
+                        <p>如果觉得脚本好用<span class="delete-line">摸到鱼了</span>，也可以请作者喝杯☕意思意思，打多少零看缘分😎</p>
                         <p>如若有功能需求或者建议，欢迎在社区进行反馈</p>
                     </div>
-                    <div class="hld__flex">
-                        <div class="hld__list-c"><img src="${IMG_REWARD_ALIPAY}"></div>
-                        <div class="hld__list-c"><img src="${IMG_REWARD_WXPAY}"></div>
+                    <div class="flex">
+                        <div class="list-c"><img src="${IMG_REWARD_ALIPAY}"></div>
+                        <div class="list-c"><img src="${IMG_REWARD_WXPAY}"></div>
                     </div>
-                    <div class="hld__source">
+                    <div class="source">
                         <a href="${script.getInfo().github}" target="_blank"><img alt="Mozilla Add-on" src="https://img.shields.io/github/stars/kisshang1993/NGA-BBS-Script?label=Star&style=social"></a>
                         <a href="${script.getInfo().update}" target="_blank"><img alt="Mozilla Add-on" src="https://img.shields.io/badge/Greasy%20Fork-NGA优化摸鱼体验-brightgreen"></a>
                     </div>
@@ -1175,15 +1174,15 @@
             })
         },
         style: `
-        .hld__reward-panel {width:500px;}
-        .hld__reward-panel .hld__reward-info {display:block;font-size:15px;margin-bottom:20px;line-height:20px;}
-        .hld__reward-panel .hld__reward-info p {margin-bottom:5px;}
-        .hld__delete-line {text-decoration:line-through;color:#666;}
-        .hld__reward-panel .hld__list-c {width:50%;}
-        .hld__reward-panel .hld__list-c:first-child {margin-right:15px;}
-        .hld__reward-panel .hld__list-c>img {width:100%;height:auto;}
-        .hld__reward-panel .hld__source {margin-top:15px;}
-        .hld__reward-panel .hld__source > a {margin-right:10px;}
+        .reward-panel {width:500px;}
+        .reward-panel .reward-info {display:block;font-size:15px;margin-bottom:20px;line-height:20px;}
+        .reward-panel .reward-info p {margin-bottom:5px;}
+        .delete-line {text-decoration:line-through;color:#666;}
+        .reward-panel .list-c {width:50%;}
+        .reward-panel .list-c:first-child {margin-right:15px;}
+        .reward-panel .list-c>img {width:100%;height:auto;}
+        .reward-panel .source {margin-top:15px;}
+        .reward-panel .source > a {margin-right:10px;}
         `
     }
     /**
@@ -1202,35 +1201,59 @@
             title: '隐藏头像',
             menu: 'left'
         },
+        apply(on = !!script?.setting?.normal?.hideAvatar) {
+            $('body').toggleClass('hld-hide-avatar', on);
+            console.log('[HideAvatar] apply ->', on);
+        },
         renderFormsFunc($el) {
-            if (script.setting.normal.hideAvatar) {
-                $el.find('.avatar, .avatar+img').css('display', 'none')
-                $el.find('.c1').css('background-image', 'none')
+            try {
+                this.apply();
+            } catch (e) {
+                console.error('[HideAvatar] renderFormsFunc error:', e);
             }
         },
         shortcutFunc: {
-            hideAvatar() {
-                if (script.setting.normal.hideAvatar || script.setting.advanced.dynamicEnable) {
-                    $('.avatar, .avatar+img').toggle()
-                    script.popNotification(`${$('.avatar:hidden').length == 0 ? '显示' : '隐藏'}头像`)
+             hideAvatar() {
+                try {
+                    script.setting.normal.hideAvatar = !script.setting.normal.hideAvatar;
+                    HideAvatar.apply(script.setting.normal.hideAvatar);
+
+                    script.popNotification(`${script.setting.normal.hideAvatar ? '隐藏' : '显示'}头像`);
+                    console.log('[HideAvatar] toggled ->', script.setting.normal.hideAvatar);
+                } catch (e) {
+                    console.error('[HideAvatar] shortcut error:', e);
                 }
             }
         },
+        // 异步样式：基于 body 类，天然适配后续插入的节点
         asyncStyle() {
+            // 不再依赖内联切换 display，而是通过类控制；这样更稳
             return `
-            .posterinfo .avatar+img {display:${script.setting.normal.hideAvatar ? 'none' : 'inline'};}
-            `
+        /* 开关：给 <body> 加上 .hld-hide-avatar 即可隐藏 */
+        .hld-hide-avatar .avatar,
+        .hld-hide-avatar .avtm img,
+        .hld-hide-avatar img.user_avatar {
+        display: none !important;
+        }
+        .hld-hide-avatar .c1 {
+        background-image: none !important;
+        }
+
+        /* 可选：避免头像占位高度过大时出现空白（按需打开）
+        .hld-hide-avatar .avatar { height: 0 !important; overflow: hidden !important; }
+        */
+            `;
         }
     }
     /**
-     * 隐藏头像模块
+     * 隐藏表情模块
      * @name HideSmile
      * @description 此模块提供了可以快捷键切换显示隐藏表情
      *              其中隐藏的表情会用文字来替代
      */
     const HideSmile = {
         name: 'HideSmile',
-        title: '隐藏头像',
+        title: '隐藏表情',
         setting: {
             shortCutCode: 87, // W
             type: 'normal',
@@ -1289,13 +1312,13 @@
             $el.find('.common img').each(function () {
                 const classs = $(this).attr('class')
                 if ((!classs || !classs.includes('smile')) && script.setting.normal.imgResize) {
-                    $(this).addClass('hld__img-resize').attr('hld-img-resize', 'ok').attr('title', '点击大图显示')
+                    $(this).addClass('img-resize').attr('hld-img-resize', 'ok').attr('title', '点击大图显示')
                 }
             })
         },
         asyncStyle: () => {
             return `
-            .hld__img-resize {outline:none !important;outline-offset:'';cursor:alias;min-width:auto !important;min-height:auto !important;max-width:${script.setting.advanced.imgResizeWidth || 200}px !important;max-height:none !important;margin:5px;}
+            .img-resize {outline:none !important;outline-offset:'';cursor:alias;min-width:auto !important;min-height:auto !important;max-width:${script.setting.advanced.imgResizeWidth || 200}px !important;max-height:none !important;margin:5px;}
             `
         }
     }
@@ -1317,35 +1340,76 @@
             menu: 'left'
         },
         renderFormsFunc($el) {
-            $el.find('.common img').each(function () {
-                const classs = $(this).attr('class')
-                if ((!classs || !classs.includes('smile')) && !$(this).is(':hidden')) {
-                    $(this).addClass('hld__img-postimg')
-                    // 显示原图
-                    $(this).attr('src', $(this).attr('src').replace('.medium.jpg', '')).attr('hld-hideimg', 'ok')
-                    let $imgB = $('<button class="switch-img" style="display:none">图</button>')
-                    $imgB.on('click', function () {
-                        $(this).prev('img').toggle()
-                        $(this).text($(this).prev('img').is(':hidden') ? '图' : '隐藏')
-                    })
-                    if (script.setting.normal.hideImage) {
-                        $(this).hide();
-                        $imgB.show()
-                    }
-                    $(this).after($imgB)
-                }
-            })
+        try {
+            // 在帖子正文区域内筛图：兼容 .common / .t_f / .pcb 等容器
+            const $container = $el; // 这里 $el 就是一行/一个帖子块
+            $container.find('.common img, .t_f img, .pcb img').each(function () {
+            const $img = $(this);
+
+            // 1) 跳过：表情图、已隐藏过、已处理过或 display:none 的非目标
+            const cls = $img.attr('class') || '';
+            if (cls.includes('smile') || $img.attr('hld-hideimg') === 'ok') return;
+
+            // 2) 取原图地址：优先 zoomfile/file，其次去掉 .medium.jpg
+            const srcNow   = $img.attr('src') || '';
+            const zoomfile = $img.attr('zoomfile');
+            const fileAttr = $img.attr('file');
+            const fullSrc  = zoomfile || fileAttr || srcNow.replace('.medium.jpg', '');
+
+            // 某些主题会给图设置 pointer-events:none；不改它
+            // 但我们在初次处理时替换成原图
+            if (fullSrc && srcNow !== fullSrc) {
+                $img.attr('src', fullSrc);
+            }
+
+            // 标记已处理，避免二次重复
+            $img.addClass('img-postimg').attr('hld-hideimg', 'ok');
+
+            // 3) 找对应的 tip menu（Discuz zoom 菜单）
+            //    规则：id="aimg_1443855" -> 菜单 id="aimg_1443855_menu"
+            const imgId = $img.attr('id');
+            const $tip  = imgId ? $('#' + imgId + '_menu') : $();
+
+            // 4) 创建切换按钮
+            let $btn = $('<button class="switch-img" type="button" style="display:none;margin:4px 0 0 0;">图</button>');
+
+            // 点击时同时切换图片与 tip 可见性
+            $btn.on('click', function () {
+                const hidden = $img.is(':hidden');
+                $img.toggle(!hidden);   // 如果原来 hidden，就显示
+                if ($tip && $tip.length) $tip.toggle(!hidden);
+                $(this).text(hidden ? '隐藏' : '图');
+            });
+
+            // 5) 根据设置决定初始状态
+            if (script.setting?.normal?.hideImage) {
+                $img.hide();
+                if ($tip && $tip.length) $tip.hide();
+                $btn.text('图').show(); // 默认隐藏 -> 按钮显示
+            } else {
+                $btn.text('隐藏').hide(); // 默认显示 -> 按钮可按需隐藏（你也可以改成显示）
+            }
+
+            // 6) 放在图片后面（紧邻），确保操作目标就是这张图
+            $img.after($btn);
+
+            // 7) 日志
+            // console.log('[hideImage] processed:', { id: imgId, src: fullSrc });
+            });
+        } catch (e) {
+            console.error('[hideImage] renderFormsFunc error:', e);
+        }
         },
         shortcutFunc: {
             hideImage() {
                 if (!script.setting.advanced.dynamicEnable) return
-                if ($('.hld__img-postimg:hidden').length < $('.switch-img').length) {
-                    $('.hld__img-postimg').hide()
+                if ($('.img-postimg:hidden').length < $('.switch-img').length) {
+                    $('.img-postimg').hide()
                     $('.switch-img').text('图').show()
                     script.popNotification(`隐藏图片`)
                     return
                 }
-                $('.hld__img-postimg').each(function () {
+                $('.img-postimg').each(function () {
                     $(this).toggle()
                     $(this).is(':hidden') ? $(this).next('button.switch-img').show() : $(this).next('button.switch-img').hide()
                 })
@@ -1373,14 +1437,14 @@
         }
     }
     /**
-     * 隐藏图片模块
+     * 隐藏版头模块
      * @name HideHeader
      * @description 此模块提供了可以配置默认隐藏版头
      *              以及一个高级配置可选一起隐藏顶部背景
      */
     const HideHeader = {
         name: 'HideHeader',
-        title: '隐藏图片',
+        title: '隐藏版头',
         settings: [{
             type: 'normal',
             key: 'hideHeader',
@@ -1397,10 +1461,10 @@
         }],
         renderAlwaysFunc($el) {
             //隐藏版头
-            if (script.setting.normal.hideHeader && $('#hld__switch_header').length == 0) {
+            if (script.setting.normal.hideHeader && $('#switch_header').length == 0) {
                 $('#toppedtopic').hide()
                 $('#toppedtopic').length > 0 && $('#sub_forums').hide()
-                let $toggleHeaderBtn = $('<button style="position: absolute;right: 16px;" id="hld__switch_header">切换显示版头</button>')
+                let $toggleHeaderBtn = $('<button style="position: absolute;right: 16px;" id="switch_header">切换显示版头</button>')
                 $toggleHeaderBtn.click(() => $('#toppedtopic, #sub_forums').toggle())
                 $('#toptopics > div > h3').append($toggleHeaderBtn)
             }
@@ -1476,93 +1540,93 @@
                 // 腾讯文档元素
                 // 插入Excel头部
                 $('body').append(`
-                <div class="hld__excel-div hld__excel-header">
-                    <div class="hld__excel-titlebar">
-                        <div class="hld__excel-titlebar-content hld__excel-icon24" style="margin:2px 2px 2px 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_1')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                <div class="excel-div excel-header">
+                    <div class="excel-titlebar">
+                        <div class="excel-titlebar-content excel-icon24" style="margin:2px 2px 2px 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_1')});"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
                         <div style="height: 24px;border-right: 1px solid rgb(0, 0, 0);opacity: 0.06;margin: 0 12px;vertical-align: middle;"></div>
-                        <div class="hld__excel-titlebar-title"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon16" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_3')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon16" style="margin-left: 12px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_4')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon16" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_5')});"></div>
+                        <div class="excel-titlebar-title"></div>
+                        <div class="excel-titlebar-content excel-icon16" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_3')});"></div>
+                        <div class="excel-titlebar-content excel-icon16" style="margin-left: 12px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_4')});"></div>
+                        <div class="excel-titlebar-content excel-icon16" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_5')});"></div>
                         <div style="margin-left: 5px;font-size: 12px;line-height: 20px;height: 18px;;color: #000;opacity: 0.48;font-weight:400;">上次修改是在2小时前进行的</div>
                         <div style="flex-grow: 1;"></div>
                         <div style="height: 24px;border-right: 1px solid rgb(0, 0, 0);opacity: 0.06;margin: 0 12px;vertical-align: middle;"></div>
                         <div style="width:28px;height:28px;border-radius: 4px;background: #e9e9e9;text-align: center;line-height: 32px;">🐟︎</div>
                     </div>
-                    <div class="hld__excel-toolbar">
-                        ${Array.from({length: 4}, (_, i) => '<div class="hld__excel-titlebar-content hld__excel-icon20" style="margin:0 6px;background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_"+(10+i)) + ');"></div>').join('')}
+                    <div class="excel-toolbar">
+                        ${Array.from({length: 4}, (_, i) => '<div class="excel-titlebar-content excel-icon20" style="margin:0 6px;background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_"+(10+i)) + ');"></div>').join('')}
                         <div style="height: 16px;border-right: 1px solid rgb(0, 0, 0);opacity: 0.06;margin: 0 4px;vertical-align: middle;"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon20" style="margin-left: 8px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_14')});"></div>
+                        <div class="excel-titlebar-content excel-icon20" style="margin-left: 8px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_14')});"></div>
                         <div style="padding: 0 2px;">插入</div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
                         <div style="height: 16px;border-right: 1px solid rgb(0, 0, 0);opacity: 0.06;margin: 0 8px;vertical-align: middle;"></div>
                         <div style="padding: 0 30px 0 4px;">常规</div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon20" style="margin-left: 12px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_15')});"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-content excel-icon20" style="margin-left: 12px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_15')});"></div>
                         <div style="margin-left: 1px;">
-                            <div class="hld__excel-titlebar-content hld__excel-icon12" style="transform: rotate(180deg);background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
-                            <div class="hld__excel-titlebar-content hld__excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                            <div class="excel-titlebar-content excel-icon12" style="transform: rotate(180deg);background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                            <div class="excel-titlebar-content excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
                         </div>
                         <div style="height: 16px;border-right: 1px solid #000;opacity: 0.06;margin: 0 4px;vertical-align: middle;"></div>
                         <div style="padding: 0 4px 0 16px;">默认字体</div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
                         <div style="padding: 0 4px 0 13px;">10</div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_16')});"></div>
-                        <div class="hld__excel-titlebar-pick">
-                            <div class="hld__excel-titlebar-content hld__excel-icon20" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_17')});"></div>
-                            <div class="hld__excel-titlebar-indication" style="background-color: #000;"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-content excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_16')});"></div>
+                        <div class="excel-titlebar-pick">
+                            <div class="excel-titlebar-content excel-icon20" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_17')});"></div>
+                            <div class="excel-titlebar-indication" style="background-color: #000;"></div>
                         </div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
-                        <div class="hld__excel-titlebar-pick">
-                            <div class="hld__excel-titlebar-content hld__excel-icon20" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_18')});"></div>
-                            <div class="hld__excel-titlebar-indication" style="background-color: #8cddfa;"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-pick">
+                            <div class="excel-titlebar-content excel-icon20" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_18')});"></div>
+                            <div class="excel-titlebar-indication" style="background-color: #8cddfa;"></div>
                         </div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_19')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="margin-left: 2px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_20')});"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-content excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_19')});"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="margin-left: 2px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-content excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_20')});"></div>
                         <div style="height: 16px;border-right: 1px solid #000;opacity: 0.06;margin: 0 10px;vertical-align: middle;"></div>
-                        ${Array.from({length: 4}, (_, i) => '<div class="hld__excel-titlebar-content hld__excel-icon20" style="background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_"+(21+i)) + ');"></div><div class="hld__excel-titlebar-content hld__excel-icon12" style="margin-left: 2px;margin-right: '+ (i==3?'0':'10') +'px;background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_2") + ');"></div>').join('')}
+                        ${Array.from({length: 4}, (_, i) => '<div class="excel-titlebar-content excel-icon20" style="background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_"+(21+i)) + ');"></div><div class="excel-titlebar-content excel-icon12" style="margin-left: 2px;margin-right: '+ (i==3?'0':'10') +'px;background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_2") + ');"></div>').join('')}
                         <div style="height: 16px;border-right: 1px solid #000;opacity: 0.06;margin: 0 10px;vertical-align: middle;"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon20" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_25')});"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-titlebar-content excel-icon20" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_25')});"></div>
+                        <div class="excel-titlebar-content excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
                         <div style="height: 16px;border-right: 1px solid #000;opacity: 0.06;margin: 0 10px;vertical-align: middle;"></div>
-                        ${Array.from({length: 4}, (_, i) => '<div class="hld__excel-titlebar-content hld__excel-icon20" style="background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_"+(26+i)) + ');"></div><div class="hld__excel-titlebar-content hld__excel-icon12" style="margin-left: 2px;margin-right: '+ (i==3?'0':'10') +'px;background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_2") + ');"></div>').join('')}
+                        ${Array.from({length: 4}, (_, i) => '<div class="excel-titlebar-content excel-icon20" style="background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_"+(26+i)) + ');"></div><div class="excel-titlebar-content excel-icon12" style="margin-left: 2px;margin-right: '+ (i==3?'0':'10') +'px;background-image:url(' + getExcelTheme(script.setting.advanced.excelTheme, "icon_2") + ');"></div>').join('')}
                         <div style="height: 16px;border-right: 1px solid #000;opacity: 0.06;margin: 0 10px;vertical-align: middle;"></div>
-                        <div class="hld__excel-titlebar-content hld__excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_20')});"></div>
+                        <div class="excel-titlebar-content excel-icon20" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_20')});"></div>
                         <div style="flex-grow: 1;"></div>
                     </div>
-                    <div class="hld__excel-formulabar">
+                    <div class="excel-formulabar">
                         <div style="border-right: 1px solid #e0e2e4;color: #777;text-align: center;width: 50px;font-size: 12px;height: 25px;line-height: 25px;font-weight:400;">A1</div>
                     </div>
-                    <div class="hld__excel-h4">
-                        <div class="hld__excel-sub"><div></div></div>
-                        ${(columnLetters().map(c => '<div class="hld__excel-column">'+c+'</div>')).join('')}
+                    <div class="excel-h4">
+                        <div class="excel-sub"><div></div></div>
+                        ${(columnLetters().map(c => '<div class="excel-column">'+c+'</div>')).join('')}
                     </div>
                 </div>
                 `)
                 // 插入Excel尾部
                 $('body').append(`
-                    <div class="hld__excel-div hld__excel-footer">
-                        <div class="hld__excel-icon24" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_33')});"></div>
-                        <div class="hld__excel-icon24" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_34')});"></div>
-                        <div class="hld__excel-sheet-tab">
-                            <div class="hld__excel-sheet-name">
+                    <div class="excel-div excel-footer">
+                        <div class="excel-icon24" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_33')});"></div>
+                        <div class="excel-icon24" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_34')});"></div>
+                        <div class="excel-sheet-tab">
+                            <div class="excel-sheet-name">
                                 <div>工作表1</div>
-                                <div class="hld__excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                                <div class="excel-icon12" style="margin-left: 4px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
                             </div>
-                            <div class="hld__excel-sheet-underblock"></div>
+                            <div class="excel-sheet-underblock"></div>
                         </div>
                         <div style="flex-grow: 1;"></div>
-                        <div class="hld__excel-icon24" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_35')});"></div>
-                        <div class="hld__excel-icon12" style="margin-left: 2px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
+                        <div class="excel-icon24" style="margin-left: 10px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_35')});"></div>
+                        <div class="excel-icon12" style="margin-left: 2px;background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_2')});"></div>
                         <div style="height: 16px;border-right: 1px solid #000;opacity: 0.12;margin: 0 10px;vertical-align: middle;"></div>
-                        <div class="hld__excel-icon24" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_36')});"></div>
-                        <div class="hld__excel-footer-item" style="font-size: 20px;margin-left:20px;">-</div>
-                        <div class="hld__excel-footer-item" style="font-weight: 400">100%</div>
-                        <div class="hld__excel-footer-item" style="font-size: 20px;">+</div>
+                        <div class="excel-icon24" style="background-image:url(${getExcelTheme(script.setting.advanced.excelTheme, 'icon_36')});"></div>
+                        <div class="excel-footer-item" style="font-size: 20px;margin-left:20px;">-</div>
+                        <div class="excel-footer-item" style="font-weight: 400">100%</div>
+                        <div class="excel-footer-item" style="font-size: 20px;">+</div>
                         <div style="width:10px;"></div>
                     </div>
                 `)
@@ -1570,106 +1634,124 @@
                 // WPS与Office元素
                 // 插入Excel头部
                 $('body').append(`
-                    <div class="hld__excel-div hld__excel-header">
-                        <div class="hld__excel-h1">
-                            <div class="hld__excel-title">${script.setting.advanced.excelTitle || document.title} - Excel</div>
-                            <img class="hld__excel-img-h1-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_L_1')}">
-                            <img class="hld__excel-img-h1-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_R_1')}">
+                    <div class="excel-div excel-header">
+                        <div class="excel-h1">
+                            <div class="excel-title">${script.setting.advanced.excelTitle || document.title} - Excel</div>
+                            <img class="excel-img-h1-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_L_1')}">
+                            <img class="excel-img-h1-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_R_1')}">
                         </div>
-                        <div class="hld__excel-h2">
-                            <img class="hld__excel-img-h2-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_L_2')}">
-                            <img class="hld__excel-img-h2-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_R_2')}">
+                        <div class="excel-h2">
+                            <img class="excel-img-h2-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_L_2')}">
+                            <img class="excel-img-h2-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_R_2')}">
                         </div>
-                        <div class="hld__excel-h3">
-                            <img class="hld__excel-img-h3-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_L_3')}">
-                            <img class="hld__excel-img-h3-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_R_3')}">
-                            <div class="hld__excel-fx"></div>
+                        <div class="excel-h3">
+                            <img class="excel-img-h3-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_L_3')}">
+                            <img class="excel-img-h3-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'H_R_3')}">
+                            <div class="excel-fx"></div>
                         </div>
-                        <div class="hld__excel-h4">
-                            <div class="hld__excel-sub"><div></div></div>
-                            ${(columnLetters().map(c => '<div class="hld__excel-column">'+c+'</div>')).join('')}
+                        <div class="excel-h4">
+                            <div class="excel-sub"><div></div></div>
+                            ${(columnLetters().map(c => '<div class="excel-column">'+c+'</div>')).join('')}
                         </div>
                     </div>
                 `)
                 // 插入Excel尾部
                 $('body').append(`
-                    <div class="hld__excel-div hld__excel-footer">
-                        <div class="hld__excel-f1">
-                            <img class="hld__excel-img-f1-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_L_1')}">
-                            <img class="hld__excel-img-f1-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_R_1')}">
+                    <div class="excel-div excel-footer">
+                        <div class="excel-f1">
+                            <img class="excel-img-f1-l1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_L_1')}">
+                            <img class="excel-img-f1-r1" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_R_1')}">
                         </div>
-                        <div class="hld__excel-f2">
-                        <img class="hld__excel-img-fl2" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_L_2')}">
-                        <img class="hld__excel-img-fr2" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_R_2')}">
+                        <div class="excel-f2">
+                        <img class="excel-img-fl2" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_L_2')}">
+                        <img class="excel-img-fr2" src="${getExcelTheme(script.setting.advanced.excelTheme, 'F_R_2')}">
                         </div>
                     </div>
                 `)
             }
 
-            $('#hld__excel_setting').click(()=>$('#hld__setting_cover').css('display', 'block'))
-            $('#mainmenu .half').parent().append($('#mainmenu .half').clone(true).addClass('hld__half-clone').text($('#mainmenu .half').text().replace('你好', '')))
+            $('#excel_setting').click(()=>$('#setting_cover').css('display', 'block'))
+            $('#mainmenu .half').parent().append($('#mainmenu .half').clone(true).addClass('half-clone').text($('#mainmenu .half').text().replace('你好', '')))
             if(script.setting.normal.excelMode) {
-                if(this.beforeUrl.includes('thread.php') || this.beforeUrl.includes('read.php')) {
-                    this.switchExcelMode()
-                }
+                this.switchExcelMode()
             }
         },
         renderAlwaysFunc($el) {
-            $('.hld__excel-theme-' + script.setting.advanced.excelTheme).length == 0 && $('body').addClass('hld__excel-theme-' + script.setting.advanced.excelTheme)
+            $('.excel-theme-' + script.setting.advanced.excelTheme).length == 0 && $('body').addClass('excel-theme-' + script.setting.advanced.excelTheme)
             if(script.setting.normal.excelMode && window.location.href != this.beforeUrl) {
                 this.beforeUrl = window.location.href
                 if(this.beforeUrl.includes('thread.php') || this.beforeUrl.includes('read.php')) {
-                    $('.hld__excel-body').length == 0 && $('body').addClass('hld__excel-body')
+                    $('.excel-body').length == 0 && $('body').addClass('excel-body')
                 }else {
-                    $('.hld__excel-body').length > 0 && $('body').removeClass('hld__excel-body')
+                    $('.excel-body').length > 0 && $('body').removeClass('excel-body')
                 }
-                $('body').toggleClass('hld__excel-original-no', !script.setting.advanced.excelNoMode)
+                $('body').toggleClass('excel-original-no', !script.setting.advanced.excelNoMode)
             }
-            if(script.setting.normal.excelMode && $('.hld__excel-body').length > 0 && $('#mmc').length == 0) {
-                $('body').addClass('hld__excel-body-err')
-            }else {
-                $('body').removeClass('hld__excel-body-err')
+            if(script.setting.normal.excelMode && $('.excel-body').length > 0 && $('#mmc').length == 0) 
+            { $('body').addClass('excel-body-err') }
+            else { 
+                $('body').removeClass('excel-body-err') 
             }
             // Excel Title
-            if ($('.hld__excel-body').length > 0) {
+            if ($('.excel-body').length > 0) {
                 const excelTitle = script.setting.advanced.excelTitle
                 if (excelTitle) {
                     $(document).attr('title') != excelTitle && $(document).attr('title', excelTitle)
                 }
-                $('.hld__excel-titlebar-title').html(excelTitle || $(document).attr('title'))
-                $('#hld__excel_icon').length == 0 && $('head').append(`<link id= "hld__excel_icon" rel="shortcut icon" type="image/png" href="${IMG_EXCEL_ICON}" />`)
+                $('.excel-titlebar-title').html(excelTitle || $(document).attr('title'))
+                $('#excel_icon').length == 0 && $('head').append(`<link id= "excel_icon" rel="shortcut icon" type="image/png" href="${IMG_EXCEL_ICON}" />`)
+            }
+        },
+        renderThreadsFunc($el){
+            try {
+                const $scope = $el;
+                const $tr = $scope;
+                // 避免重复插入：如果第一格已经是 c0 就跳过
+                const already = $tr.children(':first').is('td.c0');
+                if (!already) {
+                    $tr.prepend('<td class="c0"></td>');
+                }
+            } catch (e) {
+                console.error('[plhin] renderFormsFunc error:', e);
             }
         },
         renderFormsFunc($el) {
-        try {
-            const $scope = $el;
-            if ($scope.length === 0) {
-                console.warn('[plhin] 没有匹配到任何 <tr>，请检查 .plhin 实际加在谁身上');
+            try {
+            const $tr = $el; // 传进来的就是当前行
+
+            // 1) 行首补一个 <td class="c0">
+            const already = $tr.children(':first').is('td.c0');
+            if (!already) {
+                $tr.prepend('<td class="c0"></td>');
+            }
+
+            // 2) 定位到 td.pls（注意第二行可能没有，因为上面的 td 用了 rowspan=2）
+            const $plsTd = $tr.children('td.pls').first();
+            if ($plsTd.length === 0) {
+                console.log('[threads] no td.pls on this row (likely the 2nd row of a rowspan)');
                 return;
             }
 
-    
-            const $tr = $scope;
-            const beforeCount = $tr.children('td,th').length;
-
-            // 避免重复插入：如果第一格已经是 c0 就跳过
-            const already = $tr.children(':first').is('td.c0');
-            console.log('[plhin] TR#', 'before cells=', beforeCount, 'alreadyHasC0=', already, $tr.get(0));
-
-            if (!already) {
-                $tr.prepend('<td class="c0"></td>');
-                const afterCount = $tr.children('td,th').length;
-                console.log('[plhin] TR#', 'after cells=', afterCount);
+            // 3) 在 td.pls 内找 div.pls.cl.favatar
+            const $favatar = $plsTd.find('div.pls.cl.favatar').first();
+            if ($favatar.length === 0) {
+                console.warn('[threads] div.pls.cl.favatar not found inside td.pls');
+                return;
             }
-        } catch (e) {
-            console.error('[plhin] renderFormsFunc error:', e);
-        }
+
+            // 4) 给它的“直属子元素”中，除第一个外都加类（避免重复加）
+            const $children = $favatar.children();
+            const $targets = $children.not(':first').not('.displaynoneInExcel');
+            $targets.addClass('displaynoneInExcel');
+            } catch (e) {
+            }
+
         },
         shortcutFunc: {
             excelMode() {
                 if (script.setting.normal.excelMode || script.setting.advanced.dynamicEnable) {
                     this.switchExcelMode()
-                    script.popNotification($('.hld__excel-body').length > 0 ? 'Excel模式' : '普通模式')
+                    script.popNotification($('.excel-body').length > 0 ? 'Excel模式' : '普通模式')
                 }
             }
         },
@@ -1678,179 +1760,184 @@
          * @method switchExcelMode
          */
         switchExcelMode: () => {
-            $('body').toggleClass('hld__excel-body')
-            !script.setting.advanced.excelNoMode && $('body').addClass('hld__excel-original-no')
+            $('body').toggleClass('excel-body')
+            !script.setting.advanced.excelNoMode && $('body').addClass('excel-original-no')
             script.setting.normal.darkMode && script.popMsg('Excel模式与暗黑模式不兼容, 请勿重合使用', 'warn')
         },
         style: `
         /* WPS风格 */
-        .hld__excel-body-err {padding-top: 150px}
-        .hld__excel-body .tl .bm_c tr:hover th,.hld__excel-body .tl .bm_c tr:hover td{background-color:#fff}
-        .hld__excel-body .tl th {border-bottom: 1px solid #ebebeb;border-right: 1px solid #ebebeb;}
-        .hld__excel-header, .hld__excel-footer, .hld__excel-setting, .hld__half-clone {display: none;}
-        .hld__excel-header>div, .hld__excel-footer>div {position: relative;box-sizing: border-box;}
-        .hld__excel-header img, .hld__excel-footer img {position: absolute;}
-        .hld__excel-header {border-bottom:1px solid #bbbbbb;}
-        .hld__excel-title {display:none;}
-        .hld__excel-h1 {height:30px;background:#f3f5f8;border-bottom:1px solid #c5cbd6;}
-        .hld__excel-h2 {height:102px;background:#f4f4f4;}
-        .hld__excel-img-h1-l1, .hld__excel-img-h2-l1, .hld__excel-img-f1-l1, .hld__excel-img-fl2 {top:0;left:0;}
-        .hld__excel-img-h1-r1, .hld__excel-img-h2-r1, .hld__excel-img-f1-r1, .hld__excel-img-fr2 {top:0;right:0;}
-        .hld__excel-h3 {height:44px;background:#e8e8e8;box-shadow: inset 0 3px 5px #d9d9d9;}
-        .hld__excel-img-h3-l1 {top:12px;left:0;}
-        .hld__excel-img-h3-r1 {toP:8px;right:0;}
-        .hld__excel-fx {position: absolute;top:12px;left:253px;right:45px;height:24px;box-sizing: border-box;border:1px solid #cccccc;border-radius:4px;background:#ffffff;}
-        .hld__excel-h4 {height:21px;display:flex;overflow: hidden;}
-        .hld__excel-h4 > div {height:21px;border-right:1px solid #c8c8c8;box-sizing:border-box;flex-shrink: 0;}
-        .hld__excel-sub {width:34px;position: relative;}
-        .hld__excel-sub > div {position: absolute;right:4px;bottom:4px;width: 0px;height: 0px;border-top: 6px solid transparent;border-left: 6px solid transparent;border-right: 6px solid #b8b8b8;border-bottom: 6px solid #b8b8b8;}
-        .hld__excel-column {width: 72px;line-height:21px;text-align:center;color:#444444;font-family: sans-serif;font-weight:100;font-size:14px;}
-        .hld__excel-f1 {height:22px;background:#e8e8e8;}
-        .hld__excel-f2 {height:28px;background:#f4f4f4;}
-        .hld__excel-body {background:#fff !important;}
-        .hld__excel-body .bm {background:#fff !important;}
-        .hld__excel-body #wp {width: 100%;}
-        .hld__excel-body .oyheader {display:none;}
-        .hld__excel-body #hd {display:none;}
-        .hld__excel-body #ft {display:none;}
-        .hld__excel-body .by em {display:none;}
-        .hld__excel-body tr .num {display:none;}
-        .hld__excel-body #mainmenu {position: fixed;top: 5px;right: 75px;width: 425px;z-index: 98;}
-        .hld__excel-body #mainmenu .right {float:none;}
-        .hld__excel-body #mainmenu .stdbtn {background:none;box-shadow:none;}
-        .hld__excel-body #mainmenu .half {display:none;}
-        .hld__excel-body #mainmenu .hld__half-clone {display:block;width: 150px;text-align: right;overflow: hidden;text-overflow:ellipsis;white-space: nowrap;}
-        .hld__excel-body #mainmenu .half {color:#f4f4f4 !important;}
-        .hld__excel-body #mainmenu .stdbtn a:hover {background:none;text-decoration:underline;color:#2c5787 !important;}
-        .hld__excel-body #mainmenu .mmdefault.cell input {padding:0;margin:0;background:#ededed;border:1px solid #c9d0dc;border-radius:10px;box-shadow:none;font-size:13px !important;}
-        .hld__excel-body #mainmenu, .hld__excel-body #mainmenu .half, .hld__excel-body #mainmenu td a, .hld__excel-body #mainmenu .stdbtn .innerbg, .hld__excel-body #mainmenu, .hld__excel-body #mainmenu .stdbtn a, .hld__excel-body #mainmenu .stdbtn .td {height: 20px !important;line-height: 20px !important;padding: 0 5px !important;background:none;color:#424242 !important;}
-        .hld__excel-body #mainmenu .innerbg > div:nth-child(2) > div:first-child {display:none;}
-        .hld__excel-body .single_ttip2 {position: fixed !important;z-index:999 !important;top:30px !important;border-color:#888;}
-        .hld__excel-body #threadlist .th,.hld__excel-body .hld__excel-body #mainmenu, .hld__excel-body .catenew,.hld__excel-body #toptopics,.hld__excel-body #f_pst,.hld__excel-body #pgt,.hld__excel-body .bm.bw0.pgs.cl,.hld__excel-body #m_fopts,.hld__excel-body #b_nav,.hld__excel-body #fast_post_c,.hld__excel-body #custombg,.hld__excel-body #postlist th,.hld__excel-body .r_container,.hld__excel-body #footer,.hld__excel-body .clickextend ,.hld__excel-body #thread_types,.hld__excel-body .bm.bml.pbn {display:none !important;}
-        .hld__excel-body #mmc {margin-top:195px;margin-bottom:35px;}
-        .hld__excel-body .postBtnPos > div, .hld__excel-body .postBtnPos .stdbtn a {background:#fff !important;border-color:#bbb;}
-        .hld__excel-body .hld__excel-div,.hld__excel-body .hld__excel-setting {display:block;}
-        .hld__excel-body .hld__excel-setting {position:fixed;width:60px;height:20px;top:5px;right:95px;background:#f2f4f7;z-index:999;}
-        .hld__excel-body .hld__excel-setting img {width:20px;height:auto;vertical-align:middle;}
-        .hld__excel-body .hld__excel-setting a {margin-left:5px;vertical-align:middle;}
-        .hld__excel-body .hld__excel-header {position:fixed;top:0;left:0;height:196px;}
-        .hld__excel-body .hld__excel-footer {position:fixed;bottom:0;left:0;height:50px;}
-        .hld__excel-body .hld__excel-header, .hld__excel-body .hld__excel-footer {width: 100%;text-align: center;font-size: 16px;font-weight: bold;background:#e8e8e8;color:#337ab7;line-height: 45px;}
-        .hld__excel-body .hld__excel-header>img, .hld__excel-body .hld__excel-footer>img{position:absolute;top:0;left:0}
-        .hld__excel-body #pt {position:fixed;top:136px;left:261px;margin:0;padding:0;z-index:99;width: 9999px;}
-        .hld__excel-body #pt .bm {display:block;border:0;border-radius:0;padding:0;box-shadow:none;background:none;margin-top: 18px;margin-left: 10px;}
-        .hld__excel-body #pt .nav_spr span {color:#000;font-size:16px;vertical-align:unset;font-weight:normal;}
-        .hld__excel-body #pt .nav_root,.hld__excel-body #pt {background:none;border:none;box-shadow:none;padding:0;color:#000;border-radius:0;font-weight:normal;}
-        .hld__excel-body .bm.cl {font-size:14px !important;}
-        .hld__excel-body #mainmenu .stdbtn a {font-size:13px !important;}
-        .hld__excel-body #threadlist {margin:0;}
-        .hld__excel-body .postBtnPos > div {z-index:9991;}
-        .hld__excel-body #threadlist {border:none;box-shadow:none;border-radius:0;margin:0;background-color:#fff;counter-reset:num;border-spacing:0;}
-        .hld__excel-body #threadlist tbody {border-spacing:0;background-color:#fff;}
-        .hld__excel-body .topicrow {border-spacing:0;}
-        .hld__excel-body #threadlist td {background:#fff;padding:5px 0;margin:0;border:none;border-right:1px solid #bbbbbb;border-bottom:1px solid #bbbbbb;margin-right:-1px;}
-        .hld__excel-body .tl .icn {width:33px;background:#e8e8e8 !important;}
-        .hld__excel-body .tl .icn a {display:none;color: #777777 !important;font-size: 16px !important;font-family: auto;}
-        .hld__excel-body.hld__excel-original-no .tl .icn:before {display:none;}
-        .hld__excel-body #separatorline {display:none;}
-        .hld__excel-body.hld__excel-original-no .tl .icn a {display:inline-block;}
-        .hld__excel-body.hld__excel-original-no .tl .icn img {width:20px;}
-        .hld__excel-body .tl .icn:before {content:counter(num);counter-increment:num;color:#777777;font-size:16px;}
-        .hld__excel-body tr .common {padding-left:5px !important;}
-        .hld__excel-body tr .common em,.hld__excel-body tr .common i,.hld__excel-body tr .common span,.hld__excel-body tr .common img {display:none;}
-        .hld__excel-body .topicrow .c3 {color:#1a3959 !important;}
-        .hld__excel-body .topicrow .c3 > div, .hld__excel-body .topicrow .c4 > div {background:#FFF !important;}
-        .hld__excel-body .topicrow .c3 > div a, .hld__excel-body .topicrow .c4 > div a {color:#888 !important;}
-        .hld__excel-body .block_txt {background:#fff !important;color:#1a3959 !important;border-radius:0;padding:0 !important;min-width:0 !important;font-weight:normal;}
-        .hld__excel-body .quote {background:#fff !important;}
-        .hld__excel-body #postlist .block_txt {font-weight:bold;}
-        .hld__excel-body .topicrow .postdate,.hld__excel-body .topicrow .replydate {display:inline;margin:10px;}
-        .hld__excel-body #autopbn {margin:0;border-bottom:1px solid #bbbbbb;}
-        .hld__excel-body .hld__country-flag {border:.5px solid rgba(0,0,0,.2);}
-        .hld__excel-body #pagebbtm,.hld__excel-body #autopbn .right_ {margin:0;}
-        .hld__excel-body #pagebbtm:before {display:block;line-height:35px;width:33px;float:left;content:"#";border-right:1px solid #bbbbbb;color:#777;font-size:16px;background:#e8e8e8;}
-        .hld__excel-body #autopbn {line-height:35px;padding:0 5px;}
-        .hld__excel-body #autopbn .stdbtn {box-shadow:none;border:none !important;padding:0;padding-left:5px;background:#fff;border-radius:0;font-size:13px !important;}
-        .hld__excel-body #autopbn .stdbtn .invert {color:#591804;}
-        .hld__excel-body #autopbn {background:#fff;padding:0;border:0;}
-        .hld__excel-body #postlist .comment_c .comment_c_1 {border-top-color:#bbbbbb;}
-        .hld__excel-body #postlist .comment_c .comment_c_2 {border-color:#bbbbbb;}
-        .hld__excel-body #postlist {border:0;box-shadow:none;padding-bottom:0;margin:0;counter-reset:num;}
-        .hld__excel-body #postlist td {background:#fff;border-top:1px solid #bbbbbb;border-right:1px solid #bbbbbb;border-bottom:1px solid #bbbbbb;}
-        .hld__excel-body #postlist .c0 {width:32px;color:#777;font-size:16px;background:#e8e8e8;text-align:center;}
-        .hld__excel-body #postlist .c0:before {content:counter(num);counter-increment:num;}
-        .hld__excel-body #postlist .vertmod {background:#fff !important;color:#ccc;}
-        .hld__excel-body #postlist a[name="uid"]:before {content:"UID:"}
-        .hld__excel-body #postlist .white,.hld__excel-body #postlist .block_txt_c2,.hld__excel-body #postlist .block_txt_c0 {background:#fff !important;color:#777777;}
-        .hld__excel-body #postlist .quote {background:#fff;border-color:#bbbbbb;}
-        .hld__excel-body #postlist .postrow .postinfob .iconfont,.hld__excel-body #postlist .ogoodbtn a:hover .iconfont {fill: #10273f;}
-        .hld__excel-body #postlist .postInfo svg {fill:#10273f !important;}
-        .hld__excel-body #postlist .recommendvalue {color:#10273f !important;}
-        .hld__excel-body #postlist button {background:#eee;}
-        .hld__excel-body #postlist button:active {outline-color:#bbbbbb;}
-        .hld__excel-body #postlist .postbox {border:none !important;}
-        .hld__excel-body .posterInfoLine {background: #FFF !important;border-bottom-color: #FFF !important;}
-        .hld__excel-body.hld__reply-fixed #postbbtm {position:fixed;right:30px;top:75px;z-index:999;border-radius: 10px;overflow: hidden;}
-        .hld__excel-body .row2 .comment_c .comment_c_1_1 {border-top-color: #FFF;}
-        .hld__excel-body #postlist .comment_c .comment_c_1 {border-color: #FFF;border-top-color: #BBB;}
+        .c0{display:none;}
+        #nv_forum.excel-body, #nv_home.excel-body, .excel-body #pt a{color:#1a3959;}
+        .excel-body i.pstatus{color:#7797bd;}
+        .excel-body .c0{display:table-cell;}
+        .excel-body .pil.cl, .excel-body .pls.cl.favatar i, .excel-body .tbox.theatlevel, .excel-body .sign, .excel-body .cm, .excel-body .rate, .excel-body .psth.xs1, .excel-body .plc.plm, .excel-body .plc .po.hin, .excel-body .tns.xg2, .excel-body .pti, .excel-body .displaynoneInExcel{display:none;}
+        .excel-body-err {padding-top: 150px}
+        .excel-body .tl .bm_c tr:hover th,.excel-body .tl .bm_c tr:hover td{background-color:#fff}
+        .excel-body .tl th {border-bottom: 1px solid #ebebeb;border-right: 1px solid #ebebeb;}
+        .excel-header, .excel-footer, .excel-setting, .half-clone {display: none;}
+        .excel-header>div, .excel-footer>div {position: relative;box-sizing: border-box;}
+        .excel-header img, .excel-footer img {position: absolute;}
+        .excel-header {border-bottom:1px solid #bbbbbb;}
+        .excel-title {display:none;}
+        .excel-h1 {height:30px;background:#f3f5f8;border-bottom:1px solid #c5cbd6;}
+        .excel-h2 {height:102px;background:#f4f4f4;}
+        .excel-img-h1-l1, .excel-img-h2-l1, .excel-img-f1-l1, .excel-img-fl2 {top:0;left:0;}
+        .excel-img-h1-r1, .excel-img-h2-r1, .excel-img-f1-r1, .excel-img-fr2 {top:0;right:0;}
+        .excel-h3 {height:44px;background:#e8e8e8;box-shadow: inset 0 3px 5px #d9d9d9;}
+        .excel-img-h3-l1 {top:12px;left:0;}
+        .excel-img-h3-r1 {toP:8px;right:0;}
+        .excel-fx {position: absolute;top:12px;left:253px;right:45px;height:24px;box-sizing: border-box;border:1px solid #cccccc;border-radius:4px;background:#ffffff;}
+        .excel-h4 {height:21px;display:flex;overflow: hidden;}
+        .excel-h4 > div {height:21px;border-right:1px solid #c8c8c8;box-sizing:border-box;flex-shrink: 0;}
+        .excel-sub {width:34px;position: relative;}
+        .excel-sub > div {position: absolute;right:4px;bottom:4px;width: 0px;height: 0px;border-top: 6px solid transparent;border-left: 6px solid transparent;border-right: 6px solid #b8b8b8;border-bottom: 6px solid #b8b8b8;}
+        .excel-column {width: 72px;line-height:21px;text-align:center;color:#444444;font-family: sans-serif;font-weight:100;font-size:14px;}
+        .excel-f1 {height:22px;background:#e8e8e8;}
+        .excel-f2 {height:28px;background:#f4f4f4;}
+        .excel-body {background:#fff !important;}
+        .excel-body .bm {background:#fff !important;}
+        .excel-body #wp {width: 100%;}
+        .excel-body .oyheader {display:none;}
+        .excel-body #hd {display:none;}
+        .excel-body #ft {display:none;}
+        .excel-body .by em {display:none;}
+        .excel-body tr .num {display:none;}
+        .excel-body #mainmenu {position: fixed;top: 5px;right: 75px;width: 425px;z-index: 98;}
+        .excel-body #mainmenu .right {float:none;}
+        .excel-body #mainmenu .stdbtn {background:none;box-shadow:none;}
+        .excel-body #mainmenu .half {display:none;}
+        .excel-body .icn {display:none;}
+        .excel-body #mainmenu .half-clone {display:block;width: 150px;text-align: right;overflow: hidden;text-overflow:ellipsis;white-space: nowrap;}
+        .excel-body #mainmenu .half {color:#f4f4f4 !important;}
+        .excel-body #mainmenu .stdbtn a:hover {background:none;text-decoration:underline;color:#2c5787 !important;}
+        .excel-body #mainmenu .mmdefault.cell input {padding:0;margin:0;background:#ededed;border:1px solid #c9d0dc;border-radius:10px;box-shadow:none;font-size:13px !important;}
+        .excel-body #mainmenu, .excel-body #mainmenu .half, .excel-body #mainmenu td a, .excel-body #mainmenu .stdbtn .innerbg, .excel-body #mainmenu, .excel-body #mainmenu .stdbtn a, .excel-body #mainmenu .stdbtn .td {height: 20px !important;line-height: 20px !important;padding: 0 5px !important;background:none;color:#424242 !important;}
+        .excel-body #mainmenu .innerbg > div:nth-child(2) > div:first-child {display:none;}
+        .excel-body .single_ttip2 {position: fixed !important;z-index:999 !important;top:30px !important;border-color:#888;}
+        .excel-body #threadlist .th,.excel-body .excel-body #mainmenu, .excel-body .catenew,.excel-body #toptopics,.excel-body #f_pst,.excel-body #pgt,.excel-body .bm.bw0.pgs.cl,.excel-body #m_fopts,.excel-body #b_nav,.excel-body #fast_post_c,.excel-body #custombg,.excel-body #postlist th,.excel-body .r_container,.excel-body #footer,.excel-body .clickextend ,.excel-body #thread_types,.excel-body .bm.bml.pbn {display:none !important;}
+        .excel-body #mmc {margin-top:195px;margin-bottom:35px;}
+        .excel-body .postBtnPos > div, .excel-body .postBtnPos .stdbtn a {background:#fff !important;border-color:#bbb;}
+        .excel-body .excel-div,.excel-body .excel-setting {display:block;}
+        .excel-body .excel-setting {position:fixed;width:60px;height:20px;top:5px;right:95px;background:#f2f4f7;z-index:999;}
+        .excel-body .excel-setting img {width:20px;height:auto;vertical-align:middle;}
+        .excel-body .excel-setting a {margin-left:5px;vertical-align:middle;}
+        .excel-body .excel-header {position:fixed;top:0;left:0;height:196px;}
+        .excel-body .excel-footer {position:fixed;bottom:0;left:0;height:50px;}
+        .excel-body .excel-header, .excel-body .excel-footer {width: 100%;text-align: center;font-size: 16px;font-weight: bold;background:#e8e8e8;color:#337ab7;line-height: 45px;}
+        .excel-body .excel-header>img, .excel-body .excel-footer>img{position:absolute;top:0;left:0}
+        .excel-body #pt {position:fixed;top:136px;left:261px;margin:0;padding:0;z-index:99;width: 9999px;}
+        .excel-body #pt .bm {display:block;border:0;border-radius:0;padding:0;box-shadow:none;background:none;margin-top: 18px;margin-left: 10px;}
+        .excel-body #pt .nav_spr span {color:#000;font-size:16px;vertical-align:unset;font-weight:normal;}
+        .excel-body #pt .nav_root,.excel-body #pt {background:none;border:none;box-shadow:none;padding:0;color:#000;border-radius:0;font-weight:normal;}
+        .excel-body .bm.cl {font-size:14px !important;}
+        .excel-body #mainmenu .stdbtn a {font-size:13px !important;}
+        .excel-body #threadlist {margin:0;}
+        .excel-body .postBtnPos > div {z-index:9991;}
+        .excel-body #threadlist {border:none;box-shadow:none;border-radius:0;margin:0;background-color:#fff;counter-reset:num;border-spacing:0;}
+        .excel-body #threadlist tbody {border-spacing:0;background-color:#fff;}
+        .excel-body .topicrow {border-spacing:0;}
+        .excel-body #threadlist td {background:#fff;padding:5px 0;margin:0;border:none;border-right:1px solid #bbbbbb;border-bottom:1px solid #bbbbbb;margin-right:-1px;}
+        .excel-body .tl .c0 {width:33px;background:#e8e8e8 !important;}
+        .excel-body .tl .c0 a {display:none;color: #777777 !important;font-size: 16px !important;font-family: auto;}
+        .excel-body #separatorline {display:none;}
+        .excel-body.excel-original-no .tl .c0 a {display:inline-block;}
+        .excel-body.excel-original-no .tl .c0 img {width:20px;}
+        .excel-body .tl .c0:before {content:counter(num);counter-increment:num;color:#777777;font-size:16px;}
+        .excel-body tr .common {padding-left:5px !important;}
+        .excel-body tr .common em,.excel-body tr .common i,.excel-body tr .common span,.excel-body tr .common img {display:none;}
+        .excel-body .topicrow .c3 {color:#1a3959 !important;}
+        .excel-body .topicrow .c3 > div, .excel-body .topicrow .c4 > div {background:#FFF !important;}
+        .excel-body .topicrow .c3 > div a, .excel-body .topicrow .c4 > div a {color:#888 !important;}
+        .excel-body .block_txt {background:#fff !important;color:#1a3959 !important;border-radius:0;padding:0 !important;min-width:0 !important;font-weight:normal;}
+        .excel-body .quote {background:#fff !important;}
+        .excel-body #postlist .block_txt {font-weight:bold;}
+        .excel-body .topicrow .postdate,.excel-body .topicrow .replydate {display:inline;margin:10px;}
+        .excel-body #autopbn {margin:0;border-bottom:1px solid #bbbbbb;}
+        .excel-body .country-flag {border:.5px solid rgba(0,0,0,.2);}
+        .excel-body #pagebbtm,.excel-body #autopbn .right_ {margin:0;}
+        .excel-body #pagebbtm:before {display:block;line-height:35px;width:33px;float:left;content:"#";border-right:1px solid #bbbbbb;color:#777;font-size:16px;background:#e8e8e8;}
+        .excel-body #autopbn {line-height:35px;padding:0 5px;}
+        .excel-body #autopbn .stdbtn {box-shadow:none;border:none !important;padding:0;padding-left:5px;background:#fff;border-radius:0;font-size:13px !important;}
+        .excel-body #autopbn .stdbtn .invert {color:#591804;}
+        .excel-body #autopbn {background:#fff;padding:0;border:0;}
+        .excel-body #postlist .comment_c .comment_c_1 {border-top-color:#bbbbbb;}
+        .excel-body #postlist .comment_c .comment_c_2 {border-color:#bbbbbb;}
+        .excel-body #postlist {border:0;box-shadow:none;padding-bottom:0;margin:0;counter-reset:num;}
+        .excel-body #postlist td {background:#fff;border-top:1px solid #bbbbbb;border-right:1px solid #bbbbbb;border-bottom:1px solid #bbbbbb;}
+        .excel-body #postlist .c0 {width:32px;color:#777;font-size:16px;background:#e8e8e8;text-align:center;}
+        .excel-body #postlist .c0:before {content:counter(num);counter-increment:num;}
+        .excel-body #postlist .vertmod {background:#fff !important;color:#ccc;}
+        .excel-body #postlist a[name="uid"]:before {content:"UID:"}
+        .excel-body #postlist .white,.excel-body #postlist .block_txt_c2,.excel-body #postlist .block_txt_c0 {background:#fff !important;color:#777777;}
+        .excel-body #postlist .quote {background:#fff;border-color:#bbbbbb;}
+        .excel-body #postlist .postrow .postinfob .iconfont,.excel-body #postlist .ogoodbtn a:hover .iconfont {fill: #10273f;}
+        .excel-body #postlist .postInfo svg {fill:#10273f !important;}
+        .excel-body #postlist .recommendvalue {color:#10273f !important;}
+        .excel-body #postlist button {background:#eee;}
+        .excel-body #postlist button:active {outline-color:#bbbbbb;}
+        .excel-body #postlist .postbox {border:none !important;}
+        .excel-body .posterInfoLine {background: #FFF !important;border-bottom-color: #FFF !important;}
+        .excel-body.reply-fixed #postbbtm {position:fixed;right:30px;top:75px;z-index:999;border-radius: 10px;overflow: hidden;}
+        .excel-body .row2 .comment_c .comment_c_1_1 {border-top-color: #FFF;}
+        .excel-body #postlist .comment_c .comment_c_1 {border-color: #FFF;border-top-color: #BBB;}
         /* Office风格 */
-        .hld__excel-body.hld__excel-theme-office .hld__excel-header {height:221px;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-h1 {height:59px;background:#227447;display:flex;justify-content: center;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-title {display: block;color:#FFF;font-size: 12px;font-weight: 400;font-family: sans-serif;line-height:30px;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-h2 {height:95px;background:#f1f1f1;border-bottom:1px solid #d5d5d5;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-h3 {height:48px;background:#e6e6e6;box-shadow:none;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-fx {left:250px;right: 5px;border-color:#c6c6c6;border-radius:0;height:28px;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-h4 {height:20px;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-f1 {height:29px;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-f2 {height:21px;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-f1 {border-top:1px solid #999999;border-bottom:1px solid #bfbfbf;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-img-f1-l1, .hld__excel-body.hld__excel-theme-office .hld__excel-img-f1-r1 {top:-1px;}
-        .hld__excel-body.hld__excel-theme-office #mmc {margin-top:221px;}
-        .hld__excel-body.hld__excel-theme-office #pt {top:160px;}
-        .hld__excel-body.hld__excel-theme-office #postlist .c0,
-        .hld__excel-body.hld__excel-theme-office .tl .icn {width:32px;}
-        .hld__excel-body.hld__excel-theme-office #pagebbtm:before,
-        .hld__excel-body.hld__excel-theme-office .tl .icn a {width:28px;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-setting {top: 36px;background:none;text-align: center;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-setting a {color:#FFFFFF;}
-        .hld__excel-body.hld__excel-theme-office .hld__excel-setting img {display:none;}
-        .hld__excel-body.hld__excel-theme-office.hld__reply-fixed #postbbtm {top: 162px;}
-        .hld__excel-body.hld__excel-theme-office #autopbn td a,
-        .hld__excel-body.hld__excel-theme-office #autopbn .stdbtn {background: none;}
-        .hld__excel-body.hld__excel-theme-office #mainmenu {top:35px;right:45px;}
-        .hld__excel-body.hld__excel-theme-office #mainmenu .mmdefault.cell input {border-radius:0;}
-        .hld__excel-body.hld__excel-theme-office #mainmenu .stdbtn a, .hld__excel-body.hld__excel-theme-office #mainmenu .hld__half-clone {color:#FFF !important;}
-        .hld__excel-body.hld__excel-theme-office .single_ttip2 {top:59px !important;}
+        .excel-body.excel-theme-office .excel-header {height:221px;}
+        .excel-body.excel-theme-office .excel-h1 {height:59px;background:#227447;display:flex;justify-content: center;}
+        .excel-body.excel-theme-office .excel-title {display: block;color:#FFF;font-size: 12px;font-weight: 400;font-family: sans-serif;line-height:30px;}
+        .excel-body.excel-theme-office .excel-h2 {height:95px;background:#f1f1f1;border-bottom:1px solid #d5d5d5;}
+        .excel-body.excel-theme-office .excel-h3 {height:48px;background:#e6e6e6;box-shadow:none;}
+        .excel-body.excel-theme-office .excel-fx {left:250px;right: 5px;border-color:#c6c6c6;border-radius:0;height:28px;}
+        .excel-body.excel-theme-office .excel-h4 {height:20px;}
+        .excel-body.excel-theme-office .excel-f1 {height:29px;}
+        .excel-body.excel-theme-office .excel-f2 {height:21px;}
+        .excel-body.excel-theme-office .excel-f1 {border-top:1px solid #999999;border-bottom:1px solid #bfbfbf;}
+        .excel-body.excel-theme-office .excel-img-f1-l1, .excel-body.excel-theme-office .excel-img-f1-r1 {top:-1px;}
+        .excel-body.excel-theme-office #mmc {margin-top:221px;}
+        .excel-body.excel-theme-office #pt {top:160px;}
+        .excel-body.excel-theme-office #postlist .c0,
+        .excel-body.excel-theme-office .tl .c0 {width:32px;}
+        .excel-body.excel-theme-office #pagebbtm:before,
+        .excel-body.excel-theme-office .tl .c0 a {width:28px;}
+        .excel-body.excel-theme-office .excel-setting {top: 36px;background:none;text-align: center;}
+        .excel-body.excel-theme-office .excel-setting a {color:#FFFFFF;}
+        .excel-body.excel-theme-office .excel-setting img {display:none;}
+        .excel-body.excel-theme-office.reply-fixed #postbbtm {top: 162px;}
+        .excel-body.excel-theme-office #autopbn td a,
+        .excel-body.excel-theme-office #autopbn .stdbtn {background: none;}
+        .excel-body.excel-theme-office #mainmenu {top:35px;right:45px;}
+        .excel-body.excel-theme-office #mainmenu .mmdefault.cell input {border-radius:0;}
+        .excel-body.excel-theme-office #mainmenu .stdbtn a, .excel-body.excel-theme-office #mainmenu .half-clone {color:#FFF !important;}
+        .excel-body.excel-theme-office .single_ttip2 {top:59px !important;}
         /* 腾讯文档风格 */
-        .hld__excel-body.hld__excel-theme-tencent {font-family: -apple-system, Helvetica Neue, Helvetica, PingFang SC, Microsoft YaHei, Source Han Sans SC, Noto Sans CJK SC, WenQuanYi Micro Hei, sans-serif !important;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-header {height:125px;background:#FFF;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-titlebar-title {height: 36px;line-height: 36px;font-size: 18px;font-weight: 500;color: #000;opacity: 0.88;margin: 0 9px;max-width: 30%;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
-        .hld__excel-body.hld__excel-theme-tencent #mmc {margin-top: 145px;}
-        .hld__excel-body.hld__excel-theme-tencent #pt {top: 94px;left: 65px;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-sub {width: 51px;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-titlebar {height:56px;display: flex;align-items: center;flex-shrink: 0;padding: 0 4px;border-bottom:1px solid #ebebeb;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-toolbar {height:44px;display: flex;align-items: center;flex-shrink: 0;padding: 0 12px;border-bottom:1px solid #ebebeb;line-height: 24px;font-size: 12px;color:rgba(0, 0, 0, 0.88);font-weight:400;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-toolbar > div {flex-shrink: 0;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-titlebar-pick {margin-left: 12px;margin-top: -2px;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-titlebar-pick .hld__excel-titlebar-content {width:17px;height:17px}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-titlebar-pick .hld__excel-titlebar-indication {height: 3px;width: 14px;margin-left: 2px;margin-top: -2px;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-formulabar {height:25px;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-icon24 {width:24px;height:24px;background-size: 100% 100%;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-icon20 {width:20px;height:20px;background-size: 100% 100%;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-icon16 {width:16px;height:16px;background-size: 100% 100%;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-icon12 {width:12px;height:12px;background-size: 100% 100%;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-h4 > div {background-color:#f9fafb;border-bottom: 1px solid #ebebeb;border-top: 1px solid #ebebeb;border-color:#ebebeb;}
-        .hld__excel-body.hld__excel-theme-tencent #postlist .c0, .hld__excel-body.hld__excel-theme-tencent .tl .icn, .hld__excel-body.hld__excel-theme-tencent #pagebbtm:before {width:50px;background-color:#f9fafb !important;}
-        .hld__excel-body.hld__excel-theme-tencent #threadlist td, .hld__excel-body.hld__excel-theme-tencent #postlist td {border-color:#ebebeb;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-footer {height:32px;background:#FFF;display:flex;align-items: center;border-top: 1px solid #e0e0e0;padding: 0 10px;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-sheet-tab {margin-left: 8px;width:104px;border: 1px solid #e0e0e0;border-top: 1px solid #fff;text-align:center;height: 30px;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-sheet-tab .hld__excel-sheet-name {font-size: 14px;color: rgba(0,0,0,.88);font-weight: 400;height: 26px;line-height: 26px;border-bottom:2px solid #1e6fff;display:flex;justify-content: center;align-items: center;}
-        .hld__excel-body.hld__excel-theme-tencent .hld__excel-footer-item {color:#464d5a;font-size:14px;margin:0 4px;height: 32px;line-height: 32px;}
-        .hld__excel-body.hld__excel-theme-tencent #mainmenu {top: 18px;right: 20px;}
-        .hld__excel-body.hld__excel-theme-tencent #postbbtm {top: 60px;right: 5px;}
-        .hld__excel-body.hld__excel-theme-tencent #autopbn .stdbtn, .hld__excel-body.hld__excel-theme-tencent #autopbn .stdbtn a {background: none;font-weight:400;}
-        .hld__excel-body.hld__excel-theme-tencent #autopbn .uitxt1 span {font-size: 1em !important;color: #10273f;}
-        .hld__excel-body.hld__excel-theme-tencent #mainmenu .mmdefault.cell input {background: #FFF;}
+        .excel-body.excel-theme-tencent {font-family: -apple-system, Helvetica Neue, Helvetica, PingFang SC, Microsoft YaHei, Source Han Sans SC, Noto Sans CJK SC, WenQuanYi Micro Hei, sans-serif !important;}
+        .excel-body.excel-theme-tencent .excel-header {height:125px;background:#FFF;}
+        .excel-body.excel-theme-tencent .excel-titlebar-title {height: 36px;line-height: 36px;font-size: 18px;font-weight: 500;color: #000;opacity: 0.88;margin: 0 9px;max-width: 30%;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+        .excel-body.excel-theme-tencent #nv_forum {margin-top: 145px;}
+        .excel-body.excel-theme-tencent #pt {top: 94px;left: 65px;}
+        .excel-body.excel-theme-tencent .excel-sub {width: 51px;}
+        .excel-body.excel-theme-tencent .excel-titlebar {height:56px;display: flex;align-items: center;flex-shrink: 0;padding: 0 4px;border-bottom:1px solid #ebebeb;}
+        .excel-body.excel-theme-tencent .excel-toolbar {height:44px;display: flex;align-items: center;flex-shrink: 0;padding: 0 12px;border-bottom:1px solid #ebebeb;line-height: 24px;font-size: 12px;color:rgba(0, 0, 0, 0.88);font-weight:400;}
+        .excel-body.excel-theme-tencent .excel-toolbar > div {flex-shrink: 0;}
+        .excel-body.excel-theme-tencent .excel-titlebar-pick {margin-left: 12px;margin-top: -2px;}
+        .excel-body.excel-theme-tencent .excel-titlebar-pick .excel-titlebar-content {width:17px;height:17px}
+        .excel-body.excel-theme-tencent .excel-titlebar-pick .excel-titlebar-indication {height: 3px;width: 14px;margin-left: 2px;margin-top: -2px;}
+        .excel-body.excel-theme-tencent .excel-formulabar {height:25px;}
+        .excel-body.excel-theme-tencent .excel-icon24 {width:24px;height:24px;background-size: 100% 100%;}
+        .excel-body.excel-theme-tencent .excel-icon20 {width:20px;height:20px;background-size: 100% 100%;}
+        .excel-body.excel-theme-tencent .excel-icon16 {width:16px;height:16px;background-size: 100% 100%;}
+        .excel-body.excel-theme-tencent .excel-icon12 {width:12px;height:12px;background-size: 100% 100%;}
+        .excel-body.excel-theme-tencent .excel-h4 > div {background-color:#f9fafb;border-bottom: 1px solid #ebebeb;border-top: 1px solid #ebebeb;border-color:#ebebeb;}
+        .excel-body.excel-theme-tencent #postlist .c0, .excel-body.excel-theme-tencent .tl .c0, .excel-body.excel-theme-tencent #pagebbtm:before {width:50px;background-color:#f9fafb !important;}
+        .excel-body.excel-theme-tencent #threadlist td, .excel-body.excel-theme-tencent #postlist td {border-color:#ebebeb;}
+        .excel-body.excel-theme-tencent .excel-footer {height:32px;background:#FFF;display:flex;align-items: center;border-top: 1px solid #e0e0e0;padding: 0 10px;}
+        .excel-body.excel-theme-tencent .excel-sheet-tab {margin-left: 8px;width:104px;border: 1px solid #e0e0e0;border-top: 1px solid #fff;text-align:center;height: 30px;}
+        .excel-body.excel-theme-tencent .excel-sheet-tab .excel-sheet-name {font-size: 14px;color: rgba(0,0,0,.88);font-weight: 400;height: 26px;line-height: 26px;border-bottom:2px solid #1e6fff;display:flex;justify-content: center;align-items: center;}
+        .excel-body.excel-theme-tencent .excel-footer-item {color:#464d5a;font-size:14px;margin:0 4px;height: 32px;line-height: 32px;}
+        .excel-body.excel-theme-tencent #mainmenu {top: 18px;right: 20px;}
+        .excel-body.excel-theme-tencent #postbbtm {top: 60px;right: 5px;}
+        .excel-body.excel-theme-tencent #autopbn .stdbtn, .excel-body.excel-theme-tencent #autopbn .stdbtn a {background: none;font-weight:400;}
+        .excel-body.excel-theme-tencent #autopbn .uitxt1 span {font-size: 1em !important;color: #10273f;}
+        .excel-body.excel-theme-tencent #mainmenu .mmdefault.cell input {background: #FFF;}
         `
     }
     /**
@@ -1883,12 +1970,12 @@
                     const $quote = $(this)
                     if ($quote.height() > (script.setting.advanced.foldQuoteHeight || 300)) {
                         const originalHeight = $quote.height()
-                        $quote.addClass('hld__quote-fold')
+                        $quote.addClass('quote-fold')
                         const foldHeight = $quote.height()
-                        const $openBtn = $(`<div class="hld__quote-box"><button>查看全部 (剩余${100-parseInt(foldHeight/originalHeight*100)}%)</button></div>`)
+                        const $openBtn = $(`<div class="quote-box"><button>查看全部 (剩余${100-parseInt(foldHeight/originalHeight*100)}%)</button></div>`)
                         $openBtn.on('click', 'button', function(){
                             $(this).parent().remove()
-                            $quote.removeClass('hld__quote-fold')
+                            $quote.removeClass('quote-fold')
                         })
                         $quote.append($openBtn)
                     }
@@ -1911,9 +1998,9 @@
             }
         },
         style: `
-        .hld__quote-fold{height:150px;overflow:hidden;position: relative;}
-        .hld__quote-box{padding:10px;position: absolute;left:0;right:0;bottom:0;background:#f2eddf;}
-        .hld__excel-body .hld__quote-box{background:#FFF;}
+        .quote-fold{height:150px;overflow:hidden;position: relative;}
+        .quote-box{padding:10px;position: absolute;left:0;right:0;bottom:0;background:#f2eddf;}
+        .excel-body .quote-box{background:#FFF;}
         `
     }
     /**
@@ -1995,30 +2082,30 @@
             $el.find('img').each(function () {
                 const classs = $(this).attr('class')
                 if (!classs || (classs && !classs.includes('smile'))) {
-                    $(this).attr('hld__imglist', 'ready').removeAttr('onload').removeAttr('onclick')
+                    $(this).attr('imglist', 'ready').removeAttr('onload').removeAttr('onclick')
                 }
             })
             //图片增强
             if (script.setting.normal.imgEnhance) {
                 const _this = this
-                $('#mc').on('click', '.postcontent img[hld__imglist=ready]', function () {
+                $('#mc').on('click', '.postcontent img[imglist=ready]', function () {
                     _this.resizeImg($(this))
                     return false
                 })
             }
         },
         resizeImg(el) {
-            if ($('#hld__img_full').length > 0) return
+            if ($('#img_full').length > 0) return
             let urlList = []
-            let currentIndex = el.parent().find('[hld__imglist=ready]').index(el)
-            el.parent().find('[hld__imglist=ready]').each(function () {
+            let currentIndex = el.parent().find('[imglist=ready]').index(el)
+            el.parent().find('[imglist=ready]').each(function () {
                 if ($(this).attr('src') != 'about:blank') {
                     urlList.push($(this).data('srcorg') || $(this).data('srclazy') || $(this).attr('src'))
                 }
             })
-            let $imgBox = $('<div id="hld__img_full" title="点击背景关闭"><div id="loader"></div></div>')
-            let $imgContainer = $('<div class="hld__img_container hld__zoom-target"></div>')
-            let $img = $('<img title="鼠标滚轮放大/缩小\n左键拖动移动" class="hld__img hld__zoom-target">')
+            let $imgBox = $('<div id="img_full" title="点击背景关闭"><div id="loader"></div></div>')
+            let $imgContainer = $('<div class="img_container zoom-target"></div>')
+            let $img = $('<img title="鼠标滚轮放大/缩小\n左键拖动移动" class="img zoom-target">')
 
             const renderImg = (index) => {
                 let timer = null
@@ -2061,9 +2148,9 @@
             $img.mouseup(function () { $(document).unbind("mousemove") })
             $imgContainer.append($img)
             $imgBox.append($imgContainer)
-            $imgBox.click(function (e) { !$(e.target).hasClass('hld__img') && $(this).remove() })
+            $imgBox.click(function (e) { !$(e.target).hasClass('img') && $(this).remove() })
             $imgBox.append(`
-                <div class="hld__if_control">
+                <div class="if_control">
                 <div class="change prev-img" title="本楼内上一张"><div></div></div>
                 <div class="change rotate-right" title="逆时针旋转90°"><div></div></div>
                 <div class="change rotate-left" title="顺时针旋转90°"><div></div></div>
@@ -2107,7 +2194,7 @@
                     let offsetTop = offsetY / 2
                     let offsetLeft = offsetX / 2
 
-                    if ($(e.target).hasClass('hld__zoom-target')) {
+                    if ($(e.target).hasClass('zoom-target')) {
                         const targetOffsetX = Math.round(e.clientX - $imgContainer.position().left)
                         const targetOffsetY = Math.round(e.clientY - $imgContainer.position().top)
                         offsetLeft = (targetOffsetX / ($imgContainer.height() / 2)) * offsetLeft
@@ -2138,38 +2225,38 @@
              * Bind:Keyup
              * Esc关闭大图
              */
-            $('body').keyup(event => (event.keyCode == 27 && $('#hld__img_full').length > 0) && $('#hld__img_full').remove())
+            $('body').keyup(event => (event.keyCode == 27 && $('#img_full').length > 0) && $('#img_full').remove())
             $('body').append($imgBox)
         },
         shortcutFunc: {
             imgEnhancePrev() {
-                if ($('#hld__img_full').length > 0) {
-                    $('#hld__img_full .prev-img').click()
+                if ($('#img_full').length > 0) {
+                    $('#img_full .prev-img').click()
                 }
             },
             imgEnhanceNext() {
-                if ($('#hld__img_full').length > 0) {
-                    $('#hld__img_full .next-img').click()
+                if ($('#img_full').length > 0) {
+                    $('#img_full .next-img').click()
                 }
             }
         },
         style: `
-        .hld__img_container {position:absolute;display:flex;justify-content:center;align-items:center;}
-        .hld__if_control {position:absolute;display:flex;left:50%;bottom:15px;width:160px;margin-left:-80px;height:40px;background:rgba(0,0,0,0.6);z-index:9999999;}
+        .img_container {position:absolute;display:flex;justify-content:center;align-items:center;}
+        .if_control {position:absolute;display:flex;left:50%;bottom:15px;width:160px;margin-left:-80px;height:40px;background:rgba(0,0,0,0.6);z-index:9999999;}
         .postcontent img {margin:0 5px 5px 0 !important;box-shadow:none !important;outline:none !important;max-height: none !important;}
-        #hld__img_full {position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:99999;}
-        #hld__img_full img {cursor:move;transition:transform .2s ease;}
-        #hld__img_full .hld__imgcenter {top:50%;left:50%;transform:translate(-50%,-50%);}
-        #hld__img_full .change {width:40px;height:40px;cursor:pointer;}
-        #hld__img_full .rotate-right,#hld__img_full .rotate-left {background:url(${IMG_ICON_REFRESH}) center no-repeat;background-size:25px;}
-        #hld__img_full .rotate-right {transform:rotateY(180deg);}
-        #hld__img_full .rotate-left:hover {transform:scale(1.2);}
-        #hld__img_full .rotate-right:hover {transform:scale(1.2) rotateY(180deg);}
-        #hld__img_full .next-img:hover {transform:scale(1.2) rotate(180deg);}
-        #hld__img_full .prev-img,#hld__img_full .next-img {background:url(${IMG_ICON_LEFT}) center no-repeat;}
-        #hld__img_full .next-img {transform:rotate(180deg);}
-        #hld__img_full .prev-img:hover {transform:scale(1.2);}
-        #hld__img_full .next-img:hover {transform:scale(1.2) rotate(180deg);}
+        #img_full {position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:99999;}
+        #img_full img {cursor:move;transition:transform .2s ease;}
+        #img_full .imgcenter {top:50%;left:50%;transform:translate(-50%,-50%);}
+        #img_full .change {width:40px;height:40px;cursor:pointer;}
+        #img_full .rotate-right,#img_full .rotate-left {background:url(${IMG_ICON_REFRESH}) center no-repeat;background-size:25px;}
+        #img_full .rotate-right {transform:rotateY(180deg);}
+        #img_full .rotate-left:hover {transform:scale(1.2);}
+        #img_full .rotate-right:hover {transform:scale(1.2) rotateY(180deg);}
+        #img_full .next-img:hover {transform:scale(1.2) rotate(180deg);}
+        #img_full .prev-img,#img_full .next-img {background:url(${IMG_ICON_LEFT}) center no-repeat;}
+        #img_full .next-img {transform:rotate(180deg);}
+        #img_full .prev-img:hover {transform:scale(1.2);}
+        #img_full .next-img:hover {transform:scale(1.2) rotate(180deg);}
         `
     }
     /**
@@ -2220,10 +2307,10 @@
         },
         postAuthor: [],
         initFunc() {
-            const localPostAuthor = script.getValue('hld__yamibo_post_author')
+            const localPostAuthor = script.getValue('yamibo_post_author')
             localPostAuthor && (this.postAuthor = localPostAuthor.split(','))
             // 初始化颜色选择器
-            this.initSpectrum('#hld__setting_cover #hld__adv_authorMarkColor')
+            this.initSpectrum('#setting_cover #adv_authorMarkColor')
         },
         renderFormsFunc($el) {
             const _this = this
@@ -2233,12 +2320,12 @@
                 const authorStr = `${tid}:${author}`
                 if (author && !this.postAuthor.includes(authorStr) && ['authorid=', 'pid='].every(k => !window.location.href.includes(k))) {
                     this.postAuthor.unshift(authorStr) > 10 && this.postAuthor.pop()
-                    script.setValue('hld__yamibo_post_author', this.postAuthor.join(','))
+                    script.setValue('yamibo_post_author', this.postAuthor.join(','))
                 }
                 $el.find('a.userlink').each(function () {
                     const name = $(this).attr('hld-mark-before-name') || $(this).text().replace('[', '').replace(']', '')
                     if (name && _this.postAuthor.includes(`${tid}:${name}`)) {
-                        $(this).append('<span class="hld__post-author">楼主</span>')
+                        $(this).append('<span class="post-author">楼主</span>')
                     }
                 })
             }
@@ -2271,7 +2358,7 @@
         },
         asyncStyle() {
             return `
-            .hld__post-author {background:${script.setting.advanced.authorMarkColor || '#F00'};color: #FFF;display: inline-block;padding:0 5px;margin-left: 5px;border-radius: 5px;font-weight:bold;line-height: 1.4em;padding-top: 0.1em;padding-bottom: 0;}
+            .post-author {background:${script.setting.advanced.authorMarkColor || '#F00'};color: #FFF;display: inline-block;padding:0 5px;margin-left: 5px;border-radius: 5px;font-weight:bold;line-height: 1.4em;padding-top: 0.1em;padding-bottom: 0;}
             `
         },
         style: `
@@ -2389,7 +2476,7 @@
         }],
         $window: $(window),
         initFunc() {
-            script.setting.normal.autoPage && $('body').addClass('hld__reply-fixed')
+            script.setting.normal.autoPage && $('body').addClass('reply-fixed')
         },
         renderAlwaysFunc() {
             const _this = this
@@ -2444,7 +2531,7 @@
             extra: {
                 type: 'button',
                 label: '关键字管理',
-                id: 'hld__keywords_manage'
+                id: 'keywords_manage'
             }
         }, {
             type: 'advanced',
@@ -2468,12 +2555,12 @@
         initFunc() {
             const _this = this
             // 同步本地数据
-            const localKeywordsList = script.getValue('hld__yamibo_keywords_list')
+            const localKeywordsList = script.getValue('yamibo_keywords_list')
             try {
                 localKeywordsList && (_this.keywordsList = JSON.parse(localKeywordsList))
             } catch {
                 localKeywordsList && (_this.keywordsList = localKeywordsList.split(','))
-                script.setValue('hld__yamibo_keywords_list', JSON.stringify(_this.keywordsList))
+                script.setValue('yamibo_keywords_list', JSON.stringify(_this.keywordsList))
             }
             // 添加到导入导出配置
             script.getModule('BackupModule').addItem({
@@ -2486,28 +2573,28 @@
              * Bind:Click
              * 管理弹窗面板
              */
-            $('body').on('click', '#hld__keywords_manage', function () {
-                if($('#hld__keywords_panel').length > 0) return
-                $('#hld__setting_cover').append(`<div id="hld__keywords_panel" class="hld__list-panel animated fadeInUp">
-                <a href="javascript:void(0)" class="hld__setting-close">×</a>
+            $('body').on('click', '#keywords_manage', function () {
+                if($('#keywords_panel').length > 0) return
+                $('#setting_cover').append(`<div id="keywords_panel" class="list-panel animated fadeInUp">
+                <a href="javascript:void(0)" class="setting-close">×</a>
                 <div>
-                <div class="hld__list-c"><p>屏蔽关键字</p><textarea row="20" id="hld__keywords_list_textarea"></textarea><p class="hld__list-desc hld__help" help="以/开头会被识别为正则表达式">一行一条，支持正则表达式</p></div>
+                <div class="list-c"><p>屏蔽关键字</p><textarea row="20" id="keywords_list_textarea"></textarea><p class="list-desc help" help="以/开头会被识别为正则表达式">一行一条，支持正则表达式</p></div>
                 </div>
-                <div class="hld__btn-groups"><button class="hld__btn" id="hld__save_keywords">保存列表</button></div>
+                <div class="btn-groups"><button class="btn" id="save_keywords">保存列表</button></div>
                 </div>`)
-                $('#hld__keywords_list_textarea').val(_this.keywordsList.join('\n'))
+                $('#keywords_list_textarea').val(_this.keywordsList.join('\n'))
             })
             /**
              * Bind:Click
              * 保存关键字
              */
-            $('body').on('click', '#hld__save_keywords', function () {
-                let keywordsList = $('#hld__keywords_list_textarea').val().split('\n')
+            $('body').on('click', '#save_keywords', function () {
+                let keywordsList = $('#keywords_list_textarea').val().split('\n')
                 keywordsList = _this.removeBlank(keywordsList)
                 keywordsList = _this.uniq(keywordsList)
                 _this.keywordsList = keywordsList
-                script.setValue('hld__yamibo_keywords_list', JSON.stringify(_this.keywordsList))
-                $('#hld__keywords_panel').remove()
+                script.setValue('yamibo_keywords_list', JSON.stringify(_this.keywordsList))
+                $('#keywords_panel').remove()
                 script.popMsg('保存成功，刷新页面生效')
             })
         },
@@ -2622,8 +2709,8 @@
             return [...new Set(array)]
         },
         style: `
-        #hld__keywords_panel {width:182px;}
-        #hld__keywords_panel .hld__list-c {width:100%;}
+        #keywords_panel {width:182px;}
+        #keywords_panel .list-c {width:100%;}
         `
     }
     /**
@@ -2646,7 +2733,7 @@
             extra: {
                 type: 'button',
                 label: '名单管理',
-                id: 'hld__list_manage'
+                id: 'list_manage'
             }
         }, {
             type: 'advanced',
@@ -2686,13 +2773,13 @@
         initFunc() {
             const _this = this
             // 读取本地数据
-            const localBanList = script.getValue('hld__yamibo_ban_list')
+            const localBanList = script.getValue('yamibo_ban_list')
             try {
                 localBanList && (_this.banList = JSON.parse(localBanList))
             } catch(e) {
                 script.throwError(`【yamibo-Script】无法加载黑名单列表，数据解析失败!\n错误问题: ${e}\n\n请尝试使用【修复脚本】来修复此问题`)
             }
-            const localMarkList = script.getValue('hld__yamibo_mark_list')
+            const localMarkList = script.getValue('yamibo_mark_list')
             try {
                 if (localMarkList) {
                     _this.markList = JSON.parse(localMarkList)
@@ -2736,11 +2823,11 @@
                  * Bind:Click
                  * 操作按钮点击事件
                  */
-                $('body').on('click', '.hld__extra-icon', function () {
+                $('body').on('click', '.extra-icon', function () {
                     const type = $(this).data('type')
                     const name = $(this).data('name')
                     const uid = $(this).data('uid') + ''
-                    $('.hld__dialog').length > 0 && $('.hld__dialog').remove()
+                    $('.dialog').length > 0 && $('.dialog').remove()
                     if (type == 'ban') {
                         _this.banlistPopup({
                             type: 'confirm',
@@ -2763,7 +2850,7 @@
                  * Bind:Click
                  * 屏蔽按钮
                  */
-                $('body').on('click', '.hld__banned-block', function(){
+                $('body').on('click', '.banned-block', function(){
                     if ($(this).parent().hasClass('quote')) {
                         $(this).parent().prev().show()
                         $(this).parent().hide()
@@ -2776,57 +2863,57 @@
                  * Bind:Click
                  * 名单管理
                  */
-                $('body').on('click', '#hld__list_manage', function () {
-                    if($('#hld__banlist_panel').length > 0) return
-                    $('#hld__setting_cover').append(`<div id="hld__banlist_panel"  class="hld__list-panel animated fadeInUp">
-                    <a href="javascript:void(0)" class="hld__setting-close">×</a>
-                    <div class="hld__tab-header"><span class="hld__table-active">简易模式</span><span>原始数据</span></div>
-                    <div class="hld__tab-content hld__format-list hld__table-active">
-                    <div class="hld__list-c"><p>黑名单</p>
-                    <div class="hld__scroll-area">
-                    <table class="hld__table hld__table-banlist">
-                    <thead><tr><th width="175">用户名</th><th>UID</th><th>备注</th><th width="25">操作</th></tr></thead><tbody id="hld__banlist"></tbody></table>
+                $('body').on('click', '#list_manage', function () {
+                    if($('#banlist_panel').length > 0) return
+                    $('#setting_cover').append(`<div id="banlist_panel"  class="list-panel animated fadeInUp">
+                    <a href="javascript:void(0)" class="setting-close">×</a>
+                    <div class="tab-header"><span class="table-active">简易模式</span><span>原始数据</span></div>
+                    <div class="tab-content format-list table-active">
+                    <div class="list-c"><p>黑名单</p>
+                    <div class="scroll-area">
+                    <table class="table table-banlist">
+                    <thead><tr><th width="175">用户名</th><th>UID</th><th>备注</th><th width="25">操作</th></tr></thead><tbody id="banlist"></tbody></table>
                     </div>
-                    <div class="hld__table-banlist-buttons"><button id="hld__banlist_add_btn" class="hld__btn">+添加用户</button></div>
+                    <div class="table-banlist-buttons"><button id="banlist_add_btn" class="btn">+添加用户</button></div>
                     </div>
-                    <div class="hld__list-c"><p>标签名单</p>
-                    <div class="hld__scroll-area">
-                    <table class="hld__table hld__table-banlist">
-                    <thead><tr><th width="100">用户名</th><th>UID</th><th width="50">标签数</th><th width="50">操作</th></tr></thead><tbody id="hld__marklist"></tbody></table>
+                    <div class="list-c"><p>标签名单</p>
+                    <div class="scroll-area">
+                    <table class="table table-banlist">
+                    <thead><tr><th width="100">用户名</th><th>UID</th><th width="50">标签数</th><th width="50">操作</th></tr></thead><tbody id="marklist"></tbody></table>
                     </div>
-                    <div class="hld__table-banlist-buttons"><button id="hld__marklist_add_btn" class="hld__btn">+添加用户</button></div>
+                    <div class="table-banlist-buttons"><button id="marklist_add_btn" class="btn">+添加用户</button></div>
                     </div>
                     </div>
-                    <div class="hld__tab-content hld__source-list">
-                    <div class="hld__list-c"><p>黑名单</p><textarea row="20" id="hld__ban_list_textarea"></textarea><p class="hld__list-desc" title='[{\n    "uid": "UID",\n    "name": "用户名"\n  }, ...]'>查看数据结构</p></div>
-                    <div class="hld__list-c"><p>标签名单</p><textarea row="20" id="hld__mark_list_textarea"></textarea><p class="hld__list-desc" title='[{\n    "uid": "UID",\n    "name": "用户名",\n    "marks": [{\n        "mark": "标记",\n        "text_color": "文字色",\n        "bg_color": "背景色"\n    }, ...]\n  }, ...]'>查看数据结构</p></div>
-                    <div class="hld__btn-groups" style="width: 100%;"><button class="hld__btn" id="hld__save_banlist">保存列表</button></div>
+                    <div class="tab-content source-list">
+                    <div class="list-c"><p>黑名单</p><textarea row="20" id="ban_list_textarea"></textarea><p class="list-desc" title='[{\n    "uid": "UID",\n    "name": "用户名"\n  }, ...]'>查看数据结构</p></div>
+                    <div class="list-c"><p>标签名单</p><textarea row="20" id="mark_list_textarea"></textarea><p class="list-desc" title='[{\n    "uid": "UID",\n    "name": "用户名",\n    "marks": [{\n        "mark": "标记",\n        "text_color": "文字色",\n        "bg_color": "背景色"\n    }, ...]\n  }, ...]'>查看数据结构</p></div>
+                    <div class="btn-groups" style="width: 100%;"><button class="btn" id="save_banlist">保存列表</button></div>
                     </div>
                     </div>`)
                     /**
                      * Bind:Click
                      * 切换选项卡
                      */
-                    $('body').on('click', '.hld__tab-header > span', function(){
-                        $('.hld__tab-header > span, .hld__tab-content').removeClass('hld__table-active')
-                        $(this).addClass('hld__table-active')
-                        $('.hld__tab-content').eq($(this).index()).addClass('hld__table-active')
+                    $('body').on('click', '.tab-header > span', function(){
+                        $('.tab-header > span, .tab-content').removeClass('table-active')
+                        $(this).addClass('table-active')
+                        $('.tab-content').eq($(this).index()).addClass('table-active')
                     })
                     /**
                      * Bind:Click
                      * 移除黑名单
                      */
-                    $('body').on('click', '.hld__bl-del', function(){
+                    $('body').on('click', '.bl-del', function(){
                         const index = $(this).data('index')
                         _this.banList.splice(index, 1)
-                        script.setValue('hld__yamibo_ban_list', JSON.stringify(_this.banList))
+                        script.setValue('yamibo_ban_list', JSON.stringify(_this.banList))
                         _this.reloadBanlist()
                     })
                     /**
                      * Bind:Click
                      * 添加黑名单
                      */
-                    $('body').on('click', '#hld__banlist_add_btn', function(){
+                    $('body').on('click', '#banlist_add_btn', function(){
                         _this.banlistPopup({
                             type: 'add',
                             name: $(this).data('name'),
@@ -2840,12 +2927,12 @@
                      * Bind:Click
                      * 保存黑名单
                      */
-                    $('body').on('click', '#hld__save_banlist', function(){
-                        const banList = $('#hld__ban_list_textarea').val()
-                        const markList = $('#hld__mark_list_textarea').val()
+                    $('body').on('click', '#save_banlist', function(){
+                        const banList = $('#ban_list_textarea').val()
+                        const markList = $('#mark_list_textarea').val()
                         try {
                             _this.banList = JSON.parse(banList)
-                            script.setValue('hld__yamibo_ban_list', banList)
+                            script.setValue('yamibo_ban_list', banList)
                             _this.reloadBanlist()
                         } catch {
                             script.popMsg('黑名单数据有误！', 'err')
@@ -2853,7 +2940,7 @@
                         }
                         try {
                             _this.markList = JSON.parse(markList)
-                            script.setValue('hld__yamibo_mark_list', markList)
+                            script.setValue('yamibo_mark_list', markList)
                             _this.reloadMarklist()
                         } catch {
                             script.popMsg('标记单数据有误！', 'err')
@@ -2865,7 +2952,7 @@
                      * Bind:Click
                      * 修改标记
                      */
-                    $('body').on('click', '.hld__ml-edit', function(){
+                    $('body').on('click', '.ml-edit', function(){
                         const name = $(this).data('name')
                         const uid = $(this).data('uid') + ''
                         _this.userMarkPopup({
@@ -2880,17 +2967,17 @@
                      * Bind:Click
                      * 删除标记
                      */
-                    $('body').on('click', '.hld__ml-del', function(){
+                    $('body').on('click', '.ml-del', function(){
                         const index = $(this).data('index')
                         _this.markList.splice(index, 1)
-                        script.setValue('hld__yamibo_mark_list', JSON.stringify(_this.markList))
+                        script.setValue('yamibo_mark_list', JSON.stringify(_this.markList))
                         _this.reloadMarklist()
                     })
                     /**
                      * Bind:Click
                      * 添加标记
                      */
-                    $('body').on('click', '#hld__marklist_add_btn', function(){
+                    $('body').on('click', '#marklist_add_btn', function(){
                         _this.userMarkPopup({
                             type: 'add',
                             name: $(this).data('name'),
@@ -2933,18 +3020,18 @@
                     }
                     currentName.endsWith('楼主') && (currentName = currentName.substring(0, currentName.length - 2))
                     const mbDom = `
-                        <a class="hld__extra-icon hld__help" data-type="mark" help="标签此用户" data-name="${currentName}" data-uid="${currentUid}">🏷️</a>
-                        <a class="hld__extra-icon hld__help" help="拉黑此用户(屏蔽所有言论)" data-type="ban"  data-name="${currentName}" data-uid="${currentUid}">⛔</a>
+                        <a class="extra-icon help" data-type="mark" help="标签此用户" data-name="${currentName}" data-uid="${currentUid}">🏷️</a>
+                        <a class="extra-icon help" help="拉黑此用户(屏蔽所有言论)" data-type="ban"  data-name="${currentName}" data-uid="${currentUid}">⛔</a>
                     `
-                    script.setting.advanced.autoHideBanIcon ? $(this).after(`<span class="hld__extra-icon-box">${mbDom}</span>`) : $(this).append(mbDom)
+                    script.setting.advanced.autoHideBanIcon ? $(this).after(`<span class="extra-icon-box">${mbDom}</span>`) : $(this).append(mbDom)
                 })
                 // 标记DOm
                 $el.find('a.userlink').each(function () {
                     const uid = ($(this).attr('href') && $(this).attr('href').indexOf('uid=') > -1) ? $(this).attr('href').split('uid=')[1] + '' : ''
                     let name = ''
-                    if ($(this).find('span.hld__post-author').length > 0 || $(this).find('span.hld__remark').length > 0) {
+                    if ($(this).find('span.post-author').length > 0 || $(this).find('span.remark').length > 0) {
                         const $a = $(this).clone()
-                        $a.find('span.hld__post-author, span.hld__remark').remove()
+                        $a.find('span.post-author, span.remark').remove()
                         name = $a.text()
                     } else {
                         name = $(this).attr('hld-mark-before-name') || $(this).text().replace('[', '').replace(']', '')
@@ -2954,7 +3041,7 @@
                         //拉黑用户实现
                         if (script.setting.advanced.banStrictMode == 'HIDE') {
                             if ($(this).hasClass('author')) {
-                                const $blocktips = $('<div class="hld__banned hld__banned-block">此用户在你的黑名单中，已屏蔽其言论，点击查看</div>')
+                                const $blocktips = $('<div class="banned banned-block">此用户在你的黑名单中，已屏蔽其言论，点击查看</div>')
                                 if ($(this).parents('div.comment_c').length > 0) {
                                     $(this).parents('div.comment_c').find('.ubbcode').hide()
                                     $(this).parents('div.comment_c').find('.ubbcode').after($blocktips)
@@ -2965,7 +3052,7 @@
                             } else {
                                 if (!$(this).parent().is(':hidden')) {
                                     $(this).parent().hide()
-                                    $(this).parent().after('<div class="quote"><div class="hld__banned hld__banned-block">此用户在你的黑名单中，已屏蔽其言论，点击查看</div></div>')
+                                    $(this).parent().after('<div class="quote"><div class="banned banned-block">此用户在你的黑名单中，已屏蔽其言论，点击查看</div></div>')
                                 }
                             }
                         } else if (script.setting.advanced.banStrictMode == 'ALL') {
@@ -2976,11 +3063,11 @@
                                 if ($(this).parents('div.comment_c').length > 0) $(this).parents('div.comment_c').remove()
                                 else $(this).parents('.forumbox.postbox').remove()
                             } else {
-                                $(this).parent().html('<div class="hld__banned">此用户在你的黑名单中，已删除其言论</div>')
+                                $(this).parent().html('<div class="banned">此用户在你的黑名单中，已删除其言论</div>')
                             }
                         }
                         if (banUser.desc) {
-                            $(this).parents('.postrow').find('.hld__banned').append(`<div>备注: ${banUser.desc}</div>`)
+                            $(this).parents('.postrow').find('.banned').append(`<div>备注: ${banUser.desc}</div>`)
                         }
                         script.printLog(`黑名单屏蔽: 用户: ${name}, UID:${uid}, 备注:${banUser.desc}`)
                     }
@@ -2990,7 +3077,7 @@
                         if (userMarks) {
                             let f = []
                             userMarks.marks.forEach(e => f.push(e.mark))
-                            $(this).attr('hld-mark-before-name', name).append(`<span class="hld__remark"> (${f.join(', ')}) </span>`)
+                            $(this).attr('hld-mark-before-name', name).append(`<span class="remark"> (${f.join(', ')}) </span>`)
                         }
                     }else {
                         //新版标签风格
@@ -2998,8 +3085,8 @@
                         if(userMarks) {
                             const $el = $(this).parents('.c1').find('.clickextend')
                             let marksDom = ''
-                            userMarks.marks.forEach(item => marksDom += `<span ${item.desc ? 'class="hld__help" help="'+item.desc+'"' : ''} style="color: ${item.text_color};background-color: ${item.bg_color};">${item.mark}</span>`);
-                            $el.before(`<div class="hld__marks-container">标签: ${marksDom}</div>`)
+                            userMarks.marks.forEach(item => marksDom += `<span ${item.desc ? 'class="help" help="'+item.desc+'"' : ''} style="color: ${item.text_color};background-color: ${item.bg_color};">${item.mark}</span>`);
+                            $el.before(`<div class="marks-container">标签: ${marksDom}</div>`)
                         }
                     }
                 })
@@ -3018,38 +3105,38 @@
          */
         banlistPopup(setting) {
             const _this = this
-            $('.hld__dialog').length > 0 && $('.hld__dialog').remove()
-            let $banDialog = $(`<div class="hld__dialog hld__dialog-sub-top hld__list-panel animated zoomIn"  style="top: ${setting.top}px;left: ${setting.left}px;"><a href="javascript:void(0)" class="hld__setting-close">×</a><div id="container_dom"></div><div class="hld__dialog-buttons"></div></div>`)
+            $('.dialog').length > 0 && $('.dialog').remove()
+            let $banDialog = $(`<div class="dialog dialog-sub-top list-panel animated zoomIn"  style="top: ${setting.top}px;left: ${setting.left}px;"><a href="javascript:void(0)" class="setting-close">×</a><div id="container_dom"></div><div class="dialog-buttons"></div></div>`)
             if (setting.type == 'confirm') {
-                $banDialog.find('#container_dom').append(`<div><span>您确定要拉黑用户</span><span class="hld__dialog-user">${setting.name}</span><span>吗？</span></div><div><input type="text" class="hld__ban-desc" placeholder="可选备注"></div>`)
-                let $okBtn = $('<button class="hld__btn">拉黑</button>')
+                $banDialog.find('#container_dom').append(`<div><span>您确定要拉黑用户</span><span class="dialog-user">${setting.name}</span><span>吗？</span></div><div><input type="text" class="ban-desc" placeholder="可选备注"></div>`)
+                let $okBtn = $('<button class="btn">拉黑</button>')
                 $okBtn.click(function(){
                     _this.setBanUser({
                         name: setting.name,
                         uid: setting.uid,
-                        desc: $('.hld__ban-desc').val().trim()
+                        desc: $('.ban-desc').val().trim()
                     })
-                    $('.hld__dialog').remove()
+                    $('.dialog').remove()
                     script.popMsg('拉黑成功，重载页面生效')
                 })
-                $banDialog.find('.hld__dialog-buttons').append($okBtn)
+                $banDialog.find('.dialog-buttons').append($okBtn)
             }else if (setting.type == 'add') {
-                $banDialog.find('#container_dom').append(`<div>添加用户: </div><div><input id="hld__dialog_add_uid" type="text" value="" placeholder="UID"></div><div><input id="hld__dialog_add_name" type="text" value="" placeholder="用户名"></div><div><input type="text" id="hld__dialog_add_desc" placeholder="可选备注"></div>`)
-                let $okBtn = $('<button class="hld__btn">添加</button>')
+                $banDialog.find('#container_dom').append(`<div>添加用户: </div><div><input id="dialog_add_uid" type="text" value="" placeholder="UID"></div><div><input id="dialog_add_name" type="text" value="" placeholder="用户名"></div><div><input type="text" id="dialog_add_desc" placeholder="可选备注"></div>`)
+                let $okBtn = $('<button class="btn">添加</button>')
                 $okBtn.click(function(){
-                    const name = $banDialog.find('#hld__dialog_add_name').val().trim()
-                    const uid = $banDialog.find('#hld__dialog_add_uid').val().trim() + ''
-                    const desc = $banDialog.find('#hld__dialog_add_desc').val().trim()
+                    const name = $banDialog.find('#dialog_add_name').val().trim()
+                    const uid = $banDialog.find('#dialog_add_uid').val().trim() + ''
+                    const desc = $banDialog.find('#dialog_add_desc').val().trim()
                     if (!name && !uid) {
                         script.popMsg('UID与用户名必填一个，其中UID权重较大', 'err')
                         return
                     }
                     !_this.getBanUser({name, uid}) && _this.banList.push({name, uid, desc})
-                    script.setValue('hld__yamibo_ban_list', JSON.stringify(_this.banList))
-                    $('.hld__dialog').remove()
+                    script.setValue('yamibo_ban_list', JSON.stringify(_this.banList))
+                    $('.dialog').remove()
                     setting.callback()
                 })
-                $banDialog.find('.hld__dialog-buttons').append($okBtn)
+                $banDialog.find('.dialog-buttons').append($okBtn)
             }
             $('body').append($banDialog)
         },
@@ -3067,7 +3154,7 @@
                     if ((!u.uid && banObj.uid) || (!u.name && banObj.name)) {
                         u.uid = banObj.uid + '' || ''
                         u.name = banObj.name || ''
-                        script.setValue('hld__yamibo_ban_list', JSON.stringify(_this.banList))
+                        script.setValue('yamibo_ban_list', JSON.stringify(_this.banList))
                     }
                     return u
                 }
@@ -3081,7 +3168,7 @@
          */
         setBanUser(banObj) {
             !this.getBanUser(banObj) && this.banList.push(banObj)
-            script.setValue('hld__yamibo_ban_list', JSON.stringify(this.banList))
+            script.setValue('yamibo_ban_list', JSON.stringify(this.banList))
         },
         /**
          * 重新渲染黑名单列表
@@ -3089,20 +3176,20 @@
          */
         reloadBanlist() {
             const _this = this
-            $('#hld__banlist').empty()
-            _this.banList.forEach((item, index) => $('#hld__banlist').append(`
+            $('#banlist').empty()
+            _this.banList.forEach((item, index) => $('#banlist').append(`
                 <tr>
                     <td title="${item.name}">${item.name}</td>
                     <td title="${item.uid}">${item.uid}</td>
                     <td title="${item.desc}">${item.desc || ''}</td>
                     <td>
-                        <span class="hld__us-action hld__us-del hld__bl-del" title="删除" data-index="${index}" data-name="${item.name}" data-uid="${item.uid}">
+                        <span class="us-action us-del bl-del" title="删除" data-index="${index}" data-name="${item.name}" data-uid="${item.uid}">
                             <svg t="1686881304570" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2976" width="48" height="48"><path d="M341.312 85.312l64-85.312h213.376l64 85.312H960v85.376H64V85.312h277.312zM170.688 256h682.624v768H170.688V256zM256 341.312v597.376h512V341.312H256z m213.312 85.376v426.624H384V426.688h85.312z m170.688 0v426.624H554.688V426.688H640z" fill="#111111" p-id="2977"></path></svg>
                         </span>
                     </td>
                 </tr>
             `))
-            $('#hld__ban_list_textarea').val(JSON.stringify(_this.banList))
+            $('#ban_list_textarea').val(JSON.stringify(_this.banList))
         },
         /**
          * 重新渲染标签列表
@@ -3110,25 +3197,25 @@
          */
         reloadMarklist() {
             const _this = this
-            $('#hld__marklist').empty()
+            $('#marklist').empty()
             _this.markList.forEach((user_mark, index) => {
-                $('#hld__marklist').append(`
+                $('#marklist').append(`
                     <tr>
                         <td title="${user_mark.name}">${user_mark.name}</td>
                         <td title="${user_mark.uid}">${user_mark.uid}</td>
                         <td title="${user_mark.marks.length}">${user_mark.marks.length}</td>
                         <td>
-                            <span class="hld__us-action hld__us-edit hld__ml-edit" title="编辑" data-index="${index}" data-name="${user_mark.name}" data-uid="${user_mark.uid}">
+                            <span class="us-action us-edit ml-edit" title="编辑" data-index="${index}" data-name="${user_mark.name}" data-uid="${user_mark.uid}">
                                 <svg t="1686881523486" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4234" width="48" height="48"><path d="M652.4 156.6125a112.5 112.5 0 1 1 155.925 161.15625L731.375 394.71875 572.3 235.5875l79.5375-79.5375 0.5625 0.5625zM333.63125 792.40625v0.1125H174.5v-159.1875l358.03125-357.975 159.075 159.13125-357.975 357.91875zM62 849.5h900v112.5H62v-112.5z" fill="#111111" p-id="4235"></path></svg>
                             </span>
-                            <span class="hld__us-action hld__us-del hld__ml-del" title="删除" data-index="${index}" data-name="${user_mark.name}" data-uid="${user_mark.uid}">
+                            <span class="us-action us-del ml-del" title="删除" data-index="${index}" data-name="${user_mark.name}" data-uid="${user_mark.uid}">
                                 <svg t="1686881304570" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2976" width="48" height="48"><path d="M341.312 85.312l64-85.312h213.376l64 85.312H960v85.376H64V85.312h277.312zM170.688 256h682.624v768H170.688V256zM256 341.312v597.376h512V341.312H256z m213.312 85.376v426.624H384V426.688h85.312z m170.688 0v426.624H554.688V426.688H640z" fill="#111111" p-id="2977"></path></svg>
                             </span>
                         </td>
                     </tr>
                 `)
             })
-            $('#hld__mark_list_textarea').val(JSON.stringify(_this.markList))
+            $('#mark_list_textarea').val(JSON.stringify(_this.markList))
         },
         /**
          * 标记弹窗
@@ -3143,44 +3230,44 @@
          */
         userMarkPopup(setting) {
             const _this = this
-            $('.hld__dialog').length > 0 && $('.hld__dialog').remove()
-            let $markDialog = $(`<div class="hld__dialog hld__dialog-sub-top hld__list-panel animated zoomIn" style="top: ${setting.top}px;left: ${setting.left}px;">
-            <a href="javascript:void(0)" class="hld__setting-close">×</a>
-            ${setting.type == 'add' ? `<div style="display:block;">添加用户: <input id="hld__dialog_add_uid" type="text" value="" placeholder="UID"><input id="hld__dialog_add_name" type="text" value="" placeholder="用户名"></div>` : ''}
-            <table class="hld__dialog-mark-table">
+            $('.dialog').length > 0 && $('.dialog').remove()
+            let $markDialog = $(`<div class="dialog dialog-sub-top list-panel animated zoomIn" style="top: ${setting.top}px;left: ${setting.left}px;">
+            <a href="javascript:void(0)" class="setting-close">×</a>
+            ${setting.type == 'add' ? `<div style="display:block;">添加用户: <input id="dialog_add_uid" type="text" value="" placeholder="UID"><input id="dialog_add_name" type="text" value="" placeholder="用户名"></div>` : ''}
+            <table class="dialog-mark-table">
             <thead>
             <tr>
             <th width="100">标签</th><th width="50">文字</th><th width="50">背景</th><th>备注</th><th>操作</th>
             </tr>
             </thead>
-            <tbody id="hld__mark_body"></tbody>
+            <tbody id="mark_body"></tbody>
             </table>
-            <div class="hld__dialog-buttons hld__button-insert" style="justify-content: left !important;"></div>
-            <div class="hld__mark_history"><div class="hld__mark_history-title">选择已添加过的标签</div><div class="hld__mark_history-content"><div class="hld__mark_history-scrollarea">暂无</div></div></div>
-            <div class="hld__dialog-buttons hld__button-save" style="justify-content: right !important;"></div>
+            <div class="dialog-buttons button-insert" style="justify-content: left !important;"></div>
+            <div class="mark_history"><div class="mark_history-title">选择已添加过的标签</div><div class="mark_history-content"><div class="mark_history-scrollarea">暂无</div></div></div>
+            <div class="dialog-buttons button-save" style="justify-content: right !important;"></div>
             </div>`)
             const insertRemarkRow = (r='', t='#ffffff', b='#1f72f1', d='', n=true) => {
                 let $tr = $(`<tr>
-                <td><input type="text" class="hld__mark-mark" value="${r}"></td>
-                <td><input class="hld__dialog-color-picker hld__mark-text-color" value="${t}"></td>
-                <td><input class="hld__dialog-color-picker hld__mark-bg-color" value="${b}"></td>
-                <td><textarea rows="1" class="hld__mark-desc"/></td>
-                <td><button title="删除此标签" class="hld__mark-del">x</button></td>
+                <td><input type="text" class="mark-mark" value="${r}"></td>
+                <td><input class="dialog-color-picker mark-text-color" value="${t}"></td>
+                <td><input class="dialog-color-picker mark-bg-color" value="${b}"></td>
+                <td><textarea rows="1" class="mark-desc"/></td>
+                <td><button title="删除此标签" class="mark-del">x</button></td>
                 </tr>`)
-                $tr.find('.hld__mark-del').click(function(){$(this).parents('tr').remove()})
-                $tr.find('.hld__mark-desc').val(d)
-                script.getModule('AuthorMark').initSpectrum($tr.find('.hld__dialog-color-picker'))
-                $markDialog.find('#hld__mark_body').append($tr)
-                n && $tr.find('.hld__mark-mark').focus()
+                $tr.find('.mark-del').click(function(){$(this).parents('tr').remove()})
+                $tr.find('.mark-desc').val(d)
+                script.getModule('AuthorMark').initSpectrum($tr.find('.dialog-color-picker'))
+                $markDialog.find('#mark_body').append($tr)
+                n && $tr.find('.mark-mark').focus()
             }
 
-            _this.markedTags.length > 0 && $markDialog.find('.hld__mark_history-scrollarea').empty()
+            _this.markedTags.length > 0 && $markDialog.find('.mark_history-scrollarea').empty()
             _this.markedTags.forEach(tag => {
-                $markDialog.find('.hld__mark_history-scrollarea').append(`
+                $markDialog.find('.mark_history-scrollarea').append(`
                     <span title="${tag.mark}" textcolor="${tag.text_color}" bgcolor="${tag.bg_color}" desc="${tag.desc}" style="color: ${tag.text_color};background-color: ${tag.bg_color};">${tag.mark} (${tag.count})</span>
                 `)
             })
-            $markDialog.on('click', '.hld__mark_history-scrollarea > span', function (e) {
+            $markDialog.on('click', '.mark_history-scrollarea > span', function (e) {
                 insertRemarkRow($(this).attr('title'), $(this).attr('textcolor'), $(this).attr('bgcolor'), '', false)
             })
 
@@ -3188,16 +3275,16 @@
             const existMark = _this.getUserMarks({name: setting.name, uid: setting.uid})
             existMark !== null && existMark.marks.forEach(item => insertRemarkRow(item.mark, item.text_color, item.bg_color, item.desc, false))
 
-            let $addBtn = $('<button class="hld__btn">+添加新标签</button>')
+            let $addBtn = $('<button class="btn">+添加新标签</button>')
             $addBtn.click(() => insertRemarkRow())
-            $markDialog.find('.hld__button-insert').append($addBtn)
-            let $okBtn = $('<button class="hld__btn">保存</button>')
+            $markDialog.find('.button-insert').append($addBtn)
+            let $okBtn = $('<button class="btn">保存</button>')
 
             $okBtn.click(function(){
                 let userMarks = {marks: []}
                 if (setting.type == 'add') {
-                    userMarks.name = $markDialog.find('#hld__dialog_add_name').val().trim()
-                    userMarks.uid = $markDialog.find('#hld__dialog_add_uid').val().trim() + ''
+                    userMarks.name = $markDialog.find('#dialog_add_name').val().trim()
+                    userMarks.uid = $markDialog.find('#dialog_add_uid').val().trim() + ''
                 } else {
                     userMarks.name = setting.name
                     userMarks.uid = setting.uid + ''
@@ -3206,11 +3293,11 @@
                     script.popMsg('UID与用户名必填一个，其中UID权重较大', 'err')
                     return
                 }
-                $('#hld__mark_body > tr').each(function(){
-                    const mark = $(this).find('.hld__mark-mark').val().trim()
-                    const textColor = $(this).find('.hld__mark-text-color').val()
-                    const bgColor = $(this).find('.hld__mark-bg-color').val()
-                    const desc = $(this).find('.hld__mark-desc').val().trim()
+                $('#mark_body > tr').each(function(){
+                    const mark = $(this).find('.mark-mark').val().trim()
+                    const textColor = $(this).find('.mark-text-color').val()
+                    const bgColor = $(this).find('.mark-bg-color').val()
+                    const desc = $(this).find('.mark-desc').val().trim()
                     if(mark) {
                         userMarks.marks.push({mark, text_color: textColor, bg_color: bgColor, desc})
                     }
@@ -3221,12 +3308,12 @@
                 }
                 _this.setUserMarks(userMarks)
                 script.popMsg('保存成功，重载页面生效')
-                $('.hld__dialog').remove()
+                $('.dialog').remove()
                 setting.callback()
             })
-            $markDialog.find('.hld__button-save').append($okBtn)
+            $markDialog.find('.button-save').append($okBtn)
             $('body').append($markDialog)
-            script.getModule('AuthorMark').initSpectrum('.hld__dialog-color-picker')
+            script.getModule('AuthorMark').initSpectrum('.dialog-color-picker')
         },
         /**
          * 获取用户标签对象
@@ -3242,7 +3329,7 @@
                 if ((!userMark.uid && user.uid) || (!userMark.name && user.name)) {
                     userMark.uid = user.uid + '' || ''
                     userMark.name = user.name || ''
-                    script.setValue('hld__yamibo_mark_list', JSON.stringify(this.markList))
+                    script.setValue('yamibo_mark_list', JSON.stringify(this.markList))
                 }
                 return userMark
             } else {
@@ -3268,208 +3355,62 @@
             }else {
                 _this.markList.push(userMarks)
             }
-            script.setValue('hld__yamibo_mark_list', JSON.stringify(_this.markList))
+            script.setValue('yamibo_mark_list', JSON.stringify(_this.markList))
         },
         style: `
-        #hld__setting {color:#6666CC !important;cursor:pointer;}
-        .hld__list-panel {position:fixed;background:#fff8e7;padding:15px 20px;border-radius:10px;box-shadow:0 0 10px #666;border:1px solid #591804;z-index:9999;}
-        #hld__banlist_panel {width:500px;}
-        #hld__keywords_panel {width:182px;}
-        .hld__extra-icon-box {padding: 5px 5px 5px 0;opacity: 0;transition: all ease .2s;}
-        .hld__extra-icon-box:hover {opacity: 1;}
-        .hld__extra-icon {position: relative;padding:0 2px;text-decoration:none;cursor:pointer;}
-        .hld__extra-icon {text-decoration:none !important;}
-        span.hld__remark {color:#666;font-size:0.8em;}
-        .hld__banned {display: inline-block;color:#ba2026;border: 1px dashed #ba2026;padding: 10px 20px;font-weight: bold;}
-        .hld__banned > div {font-weight: normal;}
-        .hld__banned-block:hover {text-decoration: underline;cursor: pointer;}
-        .hld__dialog{position:absolute;padding-right:35px}
-        .hld__dialog>div{line-height:30px}
-        .hld__dialog:before{position:absolute;content:' ';width:10px;height:10px;background-color:#fff6df;left:10px;transform:rotate(45deg)}
-        .hld__dialog-sub-top:before{top:-6px;border-top:1px solid #591804;border-left:1px solid #591804}
-        .hld__dialog-sub-bottom:before{bottom:-5px;border-bottom:1px solid #591804;border-right:1px solid #591804}
-        .hld__dialog-buttons{display:flex;justify-content:flex-end!important;margin-top:10px}
-        .hld__dialog-buttons>button{cursor:pointer}
-        .hld__dialog-user{font-size:1.5em;color:red;margin:0 5px}
-        .hld__dialog input[type=text]{width:100px;margin-right:15px}
-        .hld__dialog-mark-table td{padding-bottom:3px}
-        .hld__dialog-mark-table button{padding:0 6px;margin:0;height:20px;line-height:20px;width:20px;text-align:center;cursor:pointer}
-        .hld__mark_history {margin-top: 10px;}
-        .hld__mark_history .hld__mark_history-title {font-weight: bold;}
-        .hld__mark_history .hld__mark_history-content {max-height: 200px;overflow: hidden;overflow-y: scroll;}
-        .hld__mark_history .hld__mark_history-scrollarea  {display: flex;flex-wrap: wrap;width:250px;}
-        .hld__mark_history .hld__mark_history-content span {display: inline-block;padding: 2px 5px;border-radius: 3px;margin-right: 5px;margin-top: 5px;line-height: 20px;cursor: pointer;}
-        .hld__ban-desc {width: 100% !important;}
-        .hld__mark-desc {width: 50px;resize: none;}
-        .hld__mark-desc:focus {width:150px;height:3em;}
-        .hld__tab-content {display:flex;justify-content:space-between;flex-wrap: wrap;}
-        .hld__table-keyword {margin-top:10px;width:200px;}
-        .hld__table-keyword tr td:last-child {text-align:center;}
-        .hld__table-keyword input[type=text] {width:48px;text-transform:uppercase;text-align:center;}
-        .hld__tab-header{height:40px}
-        .hld__tab-header>span{margin-right:10px;padding:5px;cursor:pointer}
-        .hld__tab-header .hld__table-active,.hld__tab-header>span:hover{color:#591804;font-weight:700;border-bottom:3px solid #591804}
-        .hld__tab-content{display:none}
-        .hld__tab-content.hld__table-active{display:flex}
-        .hld__marks-container>span{display: inline-block;padding:1px 5px;border-radius:3px;margin-right:5px;margin-top:5px;color:#fff;background-color:#1f72f1}
-        .hld__table{table-layout:fixed;border-top:1px solid #ead5bc;border-left:1px solid #ead5bc}
-        .hld__table-banlist-buttons{margin-top:10px}
-        .hld__table thead{background:#591804;border:1px solid #591804;color:#fff}
-        .hld__scroll-area{position:relative;height:200px;overflow:auto;border:1px solid #ead5bc}
-        .hld__scroll-area::-webkit-scrollbar{width:6px;height:6px}
-        .hld__scroll-area::-webkit-scrollbar-thumb{border-radius:10px;box-shadow:inset 0 0 5px rgba(0,0,0,.2);background:#591804}
-        .hld__scroll-area::-webkit-scrollbar-track{box-shadow:inset 0 0 5px rgba(0,0,0,.2);border-radius:10px;background:#ededed}
-        .hld__table td,.hld__table th{padding:3px 5px;border-bottom:1px solid #ead5bc;border-right:1px solid #ead5bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .hld__us-action{display: inline-block;width:18px;height:18px;margin:0 3px;}
-        .hld__us-action svg{width:100%;height:100%;}
-        .hld__us-action:hover{opacity:.8}
+        #setting {color:#6666CC !important;cursor:pointer;}
+        .list-panel {position:fixed;background:#fff8e7;padding:15px 20px;border-radius:10px;box-shadow:0 0 10px #666;border:1px solid #591804;z-index:9999;}
+        #banlist_panel {width:500px;}
+        #keywords_panel {width:182px;}
+        .extra-icon-box {padding: 5px 5px 5px 0;opacity: 0;transition: all ease .2s;}
+        .extra-icon-box:hover {opacity: 1;}
+        .extra-icon {position: relative;padding:0 2px;text-decoration:none;cursor:pointer;}
+        .extra-icon {text-decoration:none !important;}
+        span.remark {color:#666;font-size:0.8em;}
+        .banned {display: inline-block;color:#ba2026;border: 1px dashed #ba2026;padding: 10px 20px;font-weight: bold;}
+        .banned > div {font-weight: normal;}
+        .banned-block:hover {text-decoration: underline;cursor: pointer;}
+        .dialog{position:absolute;padding-right:35px}
+        .dialog>div{line-height:30px}
+        .dialog:before{position:absolute;content:' ';width:10px;height:10px;background-color:#fff6df;left:10px;transform:rotate(45deg)}
+        .dialog-sub-top:before{top:-6px;border-top:1px solid #591804;border-left:1px solid #591804}
+        .dialog-sub-bottom:before{bottom:-5px;border-bottom:1px solid #591804;border-right:1px solid #591804}
+        .dialog-buttons{display:flex;justify-content:flex-end!important;margin-top:10px}
+        .dialog-buttons>button{cursor:pointer}
+        .dialog-user{font-size:1.5em;color:red;margin:0 5px}
+        .dialog input[type=text]{width:100px;margin-right:15px}
+        .dialog-mark-table td{padding-bottom:3px}
+        .dialog-mark-table button{padding:0 6px;margin:0;height:20px;line-height:20px;width:20px;text-align:center;cursor:pointer}
+        .mark_history {margin-top: 10px;}
+        .mark_history .mark_history-title {font-weight: bold;}
+        .mark_history .mark_history-content {max-height: 200px;overflow: hidden;overflow-y: scroll;}
+        .mark_history .mark_history-scrollarea  {display: flex;flex-wrap: wrap;width:250px;}
+        .mark_history .mark_history-content span {display: inline-block;padding: 2px 5px;border-radius: 3px;margin-right: 5px;margin-top: 5px;line-height: 20px;cursor: pointer;}
+        .ban-desc {width: 100% !important;}
+        .mark-desc {width: 50px;resize: none;}
+        .mark-desc:focus {width:150px;height:3em;}
+        .tab-content {display:flex;justify-content:space-between;flex-wrap: wrap;}
+        .table-keyword {margin-top:10px;width:200px;}
+        .table-keyword tr td:last-child {text-align:center;}
+        .table-keyword input[type=text] {width:48px;text-transform:uppercase;text-align:center;}
+        .tab-header{height:40px}
+        .tab-header>span{margin-right:10px;padding:5px;cursor:pointer}
+        .tab-header .table-active,.tab-header>span:hover{color:#591804;font-weight:700;border-bottom:3px solid #591804}
+        .tab-content{display:none}
+        .tab-content.table-active{display:flex}
+        .marks-container>span{display: inline-block;padding:1px 5px;border-radius:3px;margin-right:5px;margin-top:5px;color:#fff;background-color:#1f72f1}
+        .table{table-layout:fixed;border-top:1px solid #ead5bc;border-left:1px solid #ead5bc}
+        .table-banlist-buttons{margin-top:10px}
+        .table thead{background:#591804;border:1px solid #591804;color:#fff}
+        .scroll-area{position:relative;height:200px;overflow:auto;border:1px solid #ead5bc}
+        .scroll-area::-webkit-scrollbar{width:6px;height:6px}
+        .scroll-area::-webkit-scrollbar-thumb{border-radius:10px;box-shadow:inset 0 0 5px rgba(0,0,0,.2);background:#591804}
+        .scroll-area::-webkit-scrollbar-track{box-shadow:inset 0 0 5px rgba(0,0,0,.2);border-radius:10px;background:#ededed}
+        .table td,.table th{padding:3px 5px;border-bottom:1px solid #ead5bc;border-right:1px solid #ead5bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .us-action{display: inline-block;width:18px;height:18px;margin:0 3px;}
+        .us-action svg{width:100%;height:100%;}
+        .us-action:hover{opacity:.8}
         `
-    }
-    /**
-     * 护眼模式
-     * @name EyeCareMode
-     * @description 此模块提供了护眼模式（绿色）
-     */
-    const EyeCareMode = {
-        name: 'EyeCareMode',
-        title: '护眼模式',
-        setting: {
-            type: 'normal',
-            key: 'eyeCareMode',
-            default: false,
-            title: '护眼模式',
-            desc: 'yamibo自带的界面色调会与此功能有一定冲突\n使用前请先将yamibo的界面色调设置为默认',
-            menu: 'left'
-        },
-        mainColor: '#cce8cc', // 主背景颜色
-        textColor: '#10273f', //文字颜色
-        buttonColor: '#c7edcc', // 按钮颜色
-        borderColor: '#ffffff', // 边框颜色
-        initFunc() {
-            script.setting.normal.eyeCareMode && $('body').addClass('hld__eye-care')
-        },
-        asyncStyle() {
-            return `
-            body.hld__eye-care, .hld__eye-care #msg_block_c .menu a, #msg_block_c .pager a, .hld__eye-care #pt .z a, .hld__eye-care button.hld__btn:hover {color: ${this.textColor} !important;}
-            .hld__eye-care body, .hld__eye-care .stdbtn, .hld__eye-care .stdbtn .innerbg, .hld__eye-care .stdbtn a, .hld__eye-care .nav_root,
-            .hld__eye-care #pt .z a, .hld__eye-care .nav_spr, .hld__eye-care .stdbtn a:hover, .hld__eye-care .row2c1, .hld__eye-care .row1c1,
-            .hld__eye-care .c1, .hld__eye-care .c2, .hld__eye-care .c3, .hld__eye-care .c4, .hld__eye-care .catenew,
-            .hld__eye-care .cateblock, .hld__eye-care .forumbox, .hld__eye-care .quote, .hld__eye-care textarea, .hld__eye-care select, .hld__eye-care input,
-            .hld__eye-care #postlist .white, .hld__eye-care #postlist .block_txt_c0, .hld__eye-care #postlist .block_txt_c2, .hld__eye-care .block_txt_c3, .hld__eye-care .block_txt, .hld__eye-care .hld__docker-sidebar,
-            .hld__eye-care .hld__docker-btns > div, .hld__eye-care .forumbox th, .hld__eye-care .contentBlock, .hld__eye-care .catenew .b2, .hld__eye-care .catenew .b3,
-            .hld__eye-care .catenew h2, .hld__eye-care .catenew div, .hld__eye-care tr .common > span:first-child, .hld__eye-care .urltip.nobr,
-            .hld__eye-care #hld__setting_panel, .hld__eye-care .hld__list-panel, .hld__eye-care .single_ttip2 .tip_title, .hld__eye-care .single_ttip2 .div2,
-            .hld__eye-care  .postBtnPos > div, .hld__eye-care .postBtnPos .stdbtn a, .hld__eye-care .postbtnsc td, .hld__eye-care #mc > div:not(.module_wrap):not(#mainmenu), .hld__eye-care #pt > div:not(.nav),
-            .hld__eye-care {background-color: ${this.mainColor} !important;}
-            .hld__eye-care .nav_root, .hld__eye-care #pt .z a, .hld__eye-care .nav_spr, .hld__eye-care .stdbtn, .hld__eye-care .quote, .hld__eye-care textarea,
-            .hld__eye-care select, .hld__eye-care input, .hld__eye-care .block_txt_c2, .hld__eye-care .block_txt_c3, .hld__eye-care .hld__docker-btns>div,
-            .hld__eye-care .r_container, .hld__eye-care .forumbox .postrow .stat {border:1px solid ${this.borderColor} !important;}
-            .hld__eye-care .b .block_txt, .hld__eye-care .block_txt.block_txt_c0 {color: #1a3959 !important;padding:0 !important;}
-            .hld__eye-care .forumbox.postbox {border-bottom: 2px solid  ${this.borderColor} !important;border: none !important;}
-            .hld__eye-care .r_bar {background-color:  ${this.borderColor};}
-            .hld__eye-care .forumbox .postrow .sigline, .hld__eye-care #postlist .block_txt_c0 {color:  ${this.borderColor} !important;border-color:  ${this.borderColor} !important;}
-            .hld__eye-care .nav_root, .hld__eye-care .invert, .hld__eye-care #mainmenu .stdbtn .half, .hld__eye-care .catenew .invert .uitxt1, .hld__eye-care .catenew .invert .uitxt3 {color:#591804;}
-            .hld__eye-care:not(.hld__excel-body) #mainmenu {border-bottom: 1px solid  ${this.borderColor} !important;}
-            .hld__eye-care #postlist, .hld__eye-care #toptopics, .hld__eye-care #threadlist, .hld__eye-care #mc > div:not(.module_wrap):not(#mainmenu),
-            .hld__eye-care #msg_block_c .subblock {box-shadow:none;border-color:  ${this.borderColor} !important;}
-            .hld__eye-care .stdbtn a, .hld__eye-care .hld__advanced-setting, .hld__eye-care .hld__docker-sidebar {border-color:  ${this.borderColor};}
-            .hld__eye-care .block_txt.block_txt_c3 {border:none !important;}
-            .hld__eye-care button, .hld__eye-care .hld__setting-close, .hld__eye-care .colored_text_btn, .hld__eye-care .rep.block_txt_big {border: 1px solid ${this.borderColor} !important;background: ${this.buttonColor} !important;}
-            .hld__eye-care #toppedtopic table, .hld__eye-care .single_ttip2 .tip_title, .hld__eye-care .collapse_btn {border-color:  ${this.borderColor} !important;}
-            .hld__eye-care .apd {color: ${this.borderColor} !important;}
-            .hld__eye-care .forumbox td:not(.c0) {border-color:  ${this.borderColor} !important;border-bottom: 1px solid  ${this.borderColor};border-right: 1px solid  ${this.borderColor};}
-            .hld__eye-care .c4 {border-right:none !important;}
-            /* Excel 适配 */
-            .hld__eye-care.hld__excel-body .hld__quote-box, .hld__eye-care.hld__excel-body #autopbn {background: ${this.mainColor};}
-            .hld__eye-care.hld__excel-body #postbbtm .stdbtn, .hld__eye-care.hld__excel-body #postbbtm td a {background: #FFF !important;}
-            .hld__eye-care.hld__excel-body .nav_root, .hld__eye-care.hld__excel-body .nav_spr,.hld__eye-care.hld__excel-body .z a,
-            .hld__eye-care.hld__excel-body #mainmenu .stdbtn, .hld__eye-care.hld__excel-body #mainmenu .innerbg, .hld__eye-care.hld__excel-body #mainmenu .stdbtn a {background: none !important;border: none !important;}
-            .hld__eye-care.hld__excel-body #mainmenu .mmdefault.cell input {background-color:#ededed !important;border-color: #c9d0dc !important;}
-            `
-        }
-    }
-    /**
-     * 暗黑模式
-     * @name DarkMode
-     * @description 此模块提供了暗黑主题(仿Github Dark efault Theme)
-     */
-    const DarkMode = {
-        name: 'DarkMode',
-        title: '暗黑模式',
-        setting: {
-            type: 'normal',
-            key: 'darkMode',
-            default: false,
-            title: '暗黑模式',
-            desc: 'yamibo自带的界面色调会与此功能有一定冲突\n使用前请先将yamibo的界面色调设置为默认\n与Excel模式不兼容，请勿混用',
-            menu: 'left'
-        },
-        mainColor: '#0c1117', // 主背景颜色
-        minorColor: '#141b22', // 次要背景颜色
-        textColor: '#e6edf3', // 文字颜色
-        muteColor: '#7d8590', // 次要文字颜色
-        linkColor: '#2f81f7', // 主链接颜色
-        buttonColor: '#1f262d', // 按钮颜色
-        buttonHoverColor: '#2e363d', // 按钮停留颜色
-        borderColor: '#21262d', // 边框颜色
-        initFunc() {
-            script.setting.normal.darkMode && $('body').removeClass('hld__eye-care').addClass('hld__dark-mode')
-        },
-        asyncStyle() {
-            return `
-            a {text-decoration: none;color: #1a3959;}
-            body.hld__dark-mode, .hld__dark-mode #msg_block_c .menu a, .hld__dark-mode #msg_block_c .pager a, .hld__dark-mode #pt .z a, .hld__dark-mode button.hld__btn:hover {color: ${this.textColor} !important;}
-            .hld__dark-mode #threadlist a, .hld__dark-mode .forumbox h2, .hld__dark-mode .forumbox h1, .hld__dark-mode textarea, .hld__dark-mode select, .hld__dark-mode input,
-            .hld__dark-mode .catetitle {color:${this.textColor} !important;}
-            .hld__dark-mode #threadlist a:hover {background-color:${this.buttonHoverColor} !important;}
-            .hld__dark-mode svg, .hld__dark-mode svg path {fill:${this.textColor} !important;}
-            .hld__dark-mode a, .hld__dark-mode .uitxt1, .hld__dark-mode #hld__setting_panel .hld__sp-title a, .hld__dark-mode .author, .hld__dark-mode #m_post .author .block_txt, .hld__dark-mode #postlist .urlincontent,
-            .hld__dark-mode .cell.rep, .hld__dark-mode .uitxt1 {color:${this.linkColor} !important;}
-            .hld__dark-mode #hld__setting_panel, .hld__dark-mode .hld__list-panel, .hld__dark-mode .single_ttip2 {border-color:${this.borderColor};box-shadow:0 8px 24px #010409;}
-            .hld__dark-mode #mainmenu .stdbtn a:hover {border-bottom:4px solid ${this.linkColor} !important;}
-            .hld__dark-mode #threadlist .block_txt_c0, .hld__dark-mode .block_txt_c0 .iconfont, .hld__dark-mode .nav_root {background-color:${this.buttonColor} !important;}
-            .hld__dark-mode .invert {color:${this.linkColor} !important;background-color:${this.minorColor} !important;}
-            .hld__dark-mode .hld__scroll-area::-webkit-scrollbar-thumb {background:#9f9f9f !important;}
-            .hld__dark-mode .innerbg, .hld__dark-mode .innerbg .mmdefault, .hld__dark-mode #usernamebg,
-            .hld__dark-mode .hld__table thead {background-color:${this.minorColor} !important;color:${this.textColor} !important;}
-            .hld__dark-mode .hld__tab-header > span.hld__table-active, .hld__dark-mode .hld__tab-header > span:hover {color:${this.linkColor} !important;border-color:${this.linkColor} !important;}
-            .hld__dark-mode .hld__dialog-sub-top:before, .hld__dark-mode .nav_root_c {background-color:${this.mainColor} !important;border-color:${this.borderColor} !important;}
-            .hld__dark-mode body, .hld__dark-mode .stdbtn, .hld__dark-mode .forumbox .topicrow .c3 > div:first-child, .hld__dark-mode .forumbox .topicrow .c4  > div:first-child,
-            .hld__dark-mode #pt .z a, .hld__dark-mode .nav_spr, .hld__dark-mode .row2c1, .hld__dark-mode .row1c1, .hld__dark-mode .uitxt1, .hld__dark-mode #pt .z a,
-            .hld__dark-mode .c1, .hld__dark-mode .c2, .hld__dark-mode .c3, .hld__dark-mode .c4, .hld__dark-mode .catenew, .hld__dark-mode .stdbtn a, .hld__dark-mode .block_txt,
-            .hld__dark-mode .cateblock, .hld__dark-mode .forumbox, .hld__dark-mode .quote, .hld__dark-mode textarea, .hld__dark-mode select, .hld__dark-mode input,
-            .hld__dark-mode #postlist .white, .hld__dark-mode #postlist .block_txt_c2, .hld__dark-mode .block_txt_c3, .hld__dark-mode .hld__docker-sidebar, .hld__dark-mode #hld__updated,
-            .hld__dark-mode .hld__docker-btns > div, .hld__dark-mode .forumbox th, .hld__dark-mode .contentBlock, .hld__dark-mode .catenew .b2, .hld__dark-mode .catenew .b3,
-            .hld__dark-mode .catenew h2, .hld__dark-mode .catenew div, .hld__dark-mode tr .common > span:first-child, .hld__dark-mode .urltip.nobr, .hld__dark-mode #postlist .small_colored_text_btn,
-            .hld__dark-mode #hld__setting_panel, .hld__dark-mode .hld__list-panel, .hld__dark-mode .single_ttip2 .tip_title, .hld__dark-mode .single_ttip2 .div2, .hld__dark-mode #startmenu .recent,
-            .hld__dark-mode .postBtnPos > div, .hld__dark-mode .postBtnPos .stdbtn a, .hld__dark-mode .postbtnsc td, .hld__dark-mode #mc > div:not(.module_wrap):not(#mainmenu), .hld__dark-mode #pt > div:not(.nav),
-            .hld__dark-mode {background-color: ${this.mainColor} !important;}
-            .hld__dark-mode .nav_root, .hld__dark-mode #pt .z a, .hld__dark-mode .nav_spr, .hld__dark-mode .stdbtn, .hld__dark-mode .quote, .hld__dark-mode textarea,
-            .hld__dark-mode select, .hld__dark-mode input, .hld__dark-mode .block_txt_c2, .hld__dark-mode .block_txt_c3, .hld__dark-mode .hld__docker-btns>div,
-            .hld__dark-mode .r_container, .hld__dark-mode .forumbox .postrow .stat {border:1px solid ${this.borderColor} !important;}
-            .hld__dark-mode .b .block_txt, .hld__dark-mode .block_txt.block_txt_c0 {color: ${this.linkColor} !important;padding:0 !important;}
-            .hld__dark-mode .forumbox.postbox {border-bottom: 2px solid  ${this.borderColor} !important;border: none !important;}
-            .hld__dark-mode .r_bar {background-color:  ${this.borderColor};}
-            .hld__dark-mode .nav_root, .hld__dark-mode .invert, .hld__dark-mode #mainmenu .stdbtn .half, .hld__dark-mode .catenew .invert .uitxt1, .hld__dark-mode .catenew .invert .uitxt3,
-            .hld__dark-mode .single_ttip2 .tip_title, .hld__dark-mode #startmenu .item > a {color:${this.textColor} !important;}
-            .hld__dark-mode:not(.hld__excel-body) #mainmenu {border-bottom: 1px solid  ${this.borderColor} !important;}
-            .hld__dark-mode #postlist, .hld__dark-mode #toptopics, .hld__dark-mode #threadlist, .hld__dark-mode #mc > div:not(.module_wrap):not(#mainmenu),
-            .hld__dark-mode #msg_block_c .subblock, .hld__dark-mode #hld__updated {box-shadow:none;border-color:  ${this.borderColor} !important;}
-            .hld__dark-mode .stdbtn a, .hld__dark-mode .hld__advanced-setting, .hld__dark-mode .hld__docker-sidebar {border-color:  ${this.borderColor};}
-            .hld__dark-mode .block_txt.block_txt_c3 {border:none !important;}
-            .hld__dark-mode button, .hld__dark-mode .hld__setting-close, .hld__dark-mode .colored_text_btn, .hld__dark-mode .rep.block_txt_big,
-            .hld__dark-mode #main a {border: 1px solid ${this.borderColor} !important;background: ${this.buttonColor} !important;color:#c9d1d9 !important;box-shadow:none !important;}
-            .hld__dark-mode button:hover {background:${this.buttonHoverColor} !important;}
-            .hld__dark-mode button:active {outline:none !important;}
-            .hld__dark-mode #toppedtopic table, .hld__dark-mode .single_ttip2 .tip_title, .hld__dark-mode .collapse_btn {border-color:  ${this.borderColor} !important;}
-            .hld__dark-mode .apd {color: ${this.borderColor} !important;}
-            .hld__dark-mode .forumbox td:not(.c0) {border-color:  ${this.borderColor} !important;border-bottom: 1px solid  ${this.borderColor};border-right: 1px solid  ${this.borderColor};}
-            .hld__dark-mode .c4 {border-right:none !important;}
-            .hld__dark-mode #threadlist .replyer, .hld__dark-mode #threadlist .replyer > b, .hld__dark-mode .small_colored_text_btn, .hld__dark-mode .forumbox .postrow .stat,
-            .hld__dark-mode #postlist .postrow .userval, .hld__dark-mode #pt .bbsinfo, .hld__dark-mode .catenew p, .hld__dark-mode #postlist .postrow .posterInfoLine .usercol, .hld__dark-mode .postrow .postinfot  {color:${this.muteColor} !important;}
-            .hld__dark-mode #postlist .postrow .posterInfoLine {background-color: ${this.mainColor} !important;border-color:${this.borderColor} !important;}
-            `
-        }
     }
     /**
      * 字体大小调整
@@ -3525,16 +3466,16 @@
         initFunc() {
             const _this = this
             const $dockerDom = $(`
-                <div class="hld__docker">
-                    <div class="hld__docker-sidebar">
+                <div class="docker">
+                    <div class="docker-sidebar">
                         <svg t="1603961015993" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3634" width="64" height="64"><path d="M518.344359 824.050365c-7.879285 0-15.758569-2.967523-21.693614-9.004897l-281.403018-281.403018c-5.730389-5.730389-9.004897-13.609673-9.004897-21.693614s3.274508-15.963226 9.004897-21.693614l281.403018-281.403018c11.972419-11.972419 31.41481-11.972419 43.387229 0 11.972419 11.972419 11.972419 31.41481 0 43.387229L280.32857 511.948836l259.709403 259.709403c11.972419 11.972419 11.972419 31.41481 0 43.387229C534.0006 821.082842 526.223643 824.050365 518.344359 824.050365z" p-id="3635" fill="#888888"></path><path d="M787.160987 772.88618c-7.879285 0-15.758569-2.967523-21.693614-9.004897l-230.238833-230.238833c-11.972419-11.972419-11.972419-31.41481 0-43.387229l230.238833-230.238833c11.972419-11.972419 31.41481-11.972419 43.387229 0 11.972419 11.972419 11.972419 31.41481 0 43.387229L600.309383 511.948836l208.545218 208.545218c11.972419 11.972419 11.972419 31.41481 0 43.387229C802.817228 769.918657 794.937943 772.88618 787.160987 772.88618z" p-id="3636" fill="#888888"></path></svg>
                     </div>
-                    <div class="hld__docker-btns">
-                        <div data-type="TOP" id="hld__jump_top"><svg t="1603962702679" title="返回顶部" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="9013" width="64" height="64"><path d="M528.73 161.5c-9.39-9.38-24.6-9.38-33.99 0L319.65 336.59a24.028 24.028 0 0 0-7.05 23.59A24.04 24.04 0 0 0 330 377.6c8.56 2.17 17.62-0.52 23.6-7.02l158.14-158.14 158.1 158.14a23.901 23.901 0 0 0 17 7.09c6.39 0 12.5-2.55 17-7.09 9.38-9.39 9.38-24.61 0-34L528.73 161.5zM63.89 607.09h102.79V869.5h48.04V607.09h102.79v-48.04H63.89v48.04z m518.69-48.05h-127.3c-15.37 0-30.75 5.85-42.49 17.59a59.846 59.846 0 0 0-17.59 42.49v190.3c0 15.37 5.89 30.75 17.59 42.49 11.74 11.74 27.12 17.59 42.49 17.59h127.3c15.37 0 30.75-5.85 42.49-17.59 11.7-11.74 17.59-27.12 17.59-42.49V619.17a59.903 59.903 0 0 0-17.53-42.55 59.912 59.912 0 0 0-42.55-17.54v-0.04z m12 250.38c0 2.31-0.6 5.59-3.5 8.54a11.785 11.785 0 0 1-8.5 3.5h-127.3c-3.2 0.02-6.26-1.26-8.5-3.54a11.785 11.785 0 0 1-3.5-8.5V619.17c0-2.31 0.6-5.59 3.5-8.54 2.24-2.27 5.31-3.53 8.5-3.5h127.3c2.27 0 5.55 0.64 8.5 3.55 2.27 2.24 3.53 5.31 3.5 8.5v190.29-0.05z m347.4-232.78a59.846 59.846 0 0 0-42.49-17.59H734.74V869.5h48.04V733.32h116.71a59.94 59.94 0 0 0 42.54-17.55 59.923 59.923 0 0 0 17.55-42.54v-54.07c0-15.37-5.85-30.74-17.59-42.49v-0.03z m-30.44 96.64c0 2.26-0.64 5.55-3.55 8.5a11.785 11.785 0 0 1-8.5 3.5H782.78v-78.15h116.71c2.27 0 5.59 0.6 8.54 3.5 2.27 2.24 3.53 5.31 3.5 8.5v54.15z m0 0" p-id="9014" fill="#591804"></path></svg></div>
-                        <div data-type="MENU" id="hld__jump_menu"><svg t="1687167394269" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5137" width="48" height="48"><path d="M708.367 353.656c0-56.745-22.729-110.092-63.996-150.218s-96.132-62.224-154.494-62.224-113.229 22.099-154.498 62.224-63.996 93.473-63.996 150.218c0 43.987 13.713 86.196 39.651 122.064 7.273 10.060 21.559 12.479 31.904 5.406 10.343-7.073 12.834-20.963 5.561-31.019-20.486-28.329-31.315-61.684-31.315-96.451 0-92.585 77.471-167.911 172.694-167.911s172.689 75.325 172.689 167.911-77.471 167.906-172.694 167.906c-47.055 0-92.711 8.965-135.702 26.646-41.516 17.076-78.796 41.509-110.806 72.632-32.007 31.123-57.142 67.371-74.705 107.736-18.181 41.808-27.401 86.199-27.401 131.948 0 12.298 10.252 22.266 22.898 22.266s22.898-9.968 22.898-22.266c0-162.35 135.843-294.425 302.816-294.425 58.361 0 113.229-22.099 154.497-62.22s63.996-93.477 63.996-150.221zM530.991 631.551c0 12.298 10.252 22.266 22.898 22.266h304.337c12.647 0 22.898-9.968 22.898-22.266s-10.252-22.266-22.898-22.266h-304.337c-12.647 0-22.898 9.968-22.898 22.266zM858.229 722.671h-304.337c-12.65 0-22.898 9.968-22.898 22.266s10.252 22.266 22.898 22.266h304.337c12.647 0 22.898-9.968 22.898-22.266 0-12.294-10.252-22.266-22.898-22.266zM858.229 836.056h-304.337c-12.65 0-22.898 9.967-22.898 22.266s10.252 22.266 22.898 22.266h304.337c12.647 0 22.898-9.968 22.898-22.266 0-12.294-10.252-22.266-22.898-22.266z" fill="#591804" p-id="5138"></path></svg></div>
-                        <div data-type="FAVOR" id="hld__jump_favor"><svg t="1687168828546" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6134" width="48" height="48"><path d="M512 776.533333l-238.933333 85.333334 8.533333-251.733334L128 405.333333l243.2-72.533333L512 128l140.8 209.066667L896 405.333333l-153.6 200.533334 8.533333 251.733333-238.933333-81.066667z m0-93.866666l149.333333 51.2-4.266666-157.866667 98.133333-123.733333-153.6-42.666667L512 277.333333 422.4 409.6l-153.6 42.666667 98.133333 123.733333-4.266666 157.866667L512 682.666667z" fill="#591804" p-id="6135"></path></svg></div>
-                        <div data-type="REPLY" id="hld__jump_reply"><svg t="1687169791224" class="icon" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8570" width="48" height="48"><path d="M415.937331 320 415.937331 96 20.001331 438.176C-6.718669 461.28-6.622669 498.784 20.033331 521.824L415.937331 864 415.937331 640C639.937331 640 847.937331 688 1023.937331 928 943.937331 480 607.937331 320 415.937331 320" p-id="8571" fill="#591804"></path></svg></div>
-                        <div data-type="BOTTOM" id="hld__jump_bottom"><svg t="1603962680160" title="跳转至最后一页" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7501" width="64" height="64"><path d="M792.855 465.806c-6.24-6.208-14.369-9.312-22.56-9.312s-16.447 3.169-22.688 9.44l-207.91 207.74v-565.28c0-17.697-14.336-32-32-32s-32.002 14.303-32.002 32v563.712l-206.24-206.164c-6.271-6.209-14.432-9.344-22.624-9.344-8.224 0-16.417 3.135-22.656 9.407-12.511 12.513-12.48 32.768 0.032 45.248L483.536 770.38c3.265 3.263 7.104 5.6 11.136 7.135 4 1.793 8.352 2.88 13.024 2.88 1.12 0 2.08-0.544 3.2-0.64 8.288 0.064 16.608-3.009 22.976-9.408l259.11-259.292c12.48-12.511 12.448-32.8-0.127-45.248z m99.706 409.725c0 17.665-14.303 32.001-31.999 32.001h-704c-17.665 0-32-14.334-32-31.999s14.335-32 32-32h704c17.696 0 32 14.334 32 31.998z" p-id="7502" fill="#591804"></path></svg></div>
+                    <div class="docker-btns">
+                        <div data-type="TOP" id="jump_top"><svg t="1603962702679" title="返回顶部" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="9013" width="64" height="64"><path d="M528.73 161.5c-9.39-9.38-24.6-9.38-33.99 0L319.65 336.59a24.028 24.028 0 0 0-7.05 23.59A24.04 24.04 0 0 0 330 377.6c8.56 2.17 17.62-0.52 23.6-7.02l158.14-158.14 158.1 158.14a23.901 23.901 0 0 0 17 7.09c6.39 0 12.5-2.55 17-7.09 9.38-9.39 9.38-24.61 0-34L528.73 161.5zM63.89 607.09h102.79V869.5h48.04V607.09h102.79v-48.04H63.89v48.04z m518.69-48.05h-127.3c-15.37 0-30.75 5.85-42.49 17.59a59.846 59.846 0 0 0-17.59 42.49v190.3c0 15.37 5.89 30.75 17.59 42.49 11.74 11.74 27.12 17.59 42.49 17.59h127.3c15.37 0 30.75-5.85 42.49-17.59 11.7-11.74 17.59-27.12 17.59-42.49V619.17a59.903 59.903 0 0 0-17.53-42.55 59.912 59.912 0 0 0-42.55-17.54v-0.04z m12 250.38c0 2.31-0.6 5.59-3.5 8.54a11.785 11.785 0 0 1-8.5 3.5h-127.3c-3.2 0.02-6.26-1.26-8.5-3.54a11.785 11.785 0 0 1-3.5-8.5V619.17c0-2.31 0.6-5.59 3.5-8.54 2.24-2.27 5.31-3.53 8.5-3.5h127.3c2.27 0 5.55 0.64 8.5 3.55 2.27 2.24 3.53 5.31 3.5 8.5v190.29-0.05z m347.4-232.78a59.846 59.846 0 0 0-42.49-17.59H734.74V869.5h48.04V733.32h116.71a59.94 59.94 0 0 0 42.54-17.55 59.923 59.923 0 0 0 17.55-42.54v-54.07c0-15.37-5.85-30.74-17.59-42.49v-0.03z m-30.44 96.64c0 2.26-0.64 5.55-3.55 8.5a11.785 11.785 0 0 1-8.5 3.5H782.78v-78.15h116.71c2.27 0 5.59 0.6 8.54 3.5 2.27 2.24 3.53 5.31 3.5 8.5v54.15z m0 0" p-id="9014" fill="#591804"></path></svg></div>
+                        <div data-type="MENU" id="jump_menu"><svg t="1687167394269" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5137" width="48" height="48"><path d="M708.367 353.656c0-56.745-22.729-110.092-63.996-150.218s-96.132-62.224-154.494-62.224-113.229 22.099-154.498 62.224-63.996 93.473-63.996 150.218c0 43.987 13.713 86.196 39.651 122.064 7.273 10.060 21.559 12.479 31.904 5.406 10.343-7.073 12.834-20.963 5.561-31.019-20.486-28.329-31.315-61.684-31.315-96.451 0-92.585 77.471-167.911 172.694-167.911s172.689 75.325 172.689 167.911-77.471 167.906-172.694 167.906c-47.055 0-92.711 8.965-135.702 26.646-41.516 17.076-78.796 41.509-110.806 72.632-32.007 31.123-57.142 67.371-74.705 107.736-18.181 41.808-27.401 86.199-27.401 131.948 0 12.298 10.252 22.266 22.898 22.266s22.898-9.968 22.898-22.266c0-162.35 135.843-294.425 302.816-294.425 58.361 0 113.229-22.099 154.497-62.22s63.996-93.477 63.996-150.221zM530.991 631.551c0 12.298 10.252 22.266 22.898 22.266h304.337c12.647 0 22.898-9.968 22.898-22.266s-10.252-22.266-22.898-22.266h-304.337c-12.647 0-22.898 9.968-22.898 22.266zM858.229 722.671h-304.337c-12.65 0-22.898 9.968-22.898 22.266s10.252 22.266 22.898 22.266h304.337c12.647 0 22.898-9.968 22.898-22.266 0-12.294-10.252-22.266-22.898-22.266zM858.229 836.056h-304.337c-12.65 0-22.898 9.967-22.898 22.266s10.252 22.266 22.898 22.266h304.337c12.647 0 22.898-9.968 22.898-22.266 0-12.294-10.252-22.266-22.898-22.266z" fill="#591804" p-id="5138"></path></svg></div>
+                        <div data-type="FAVOR" id="jump_favor"><svg t="1687168828546" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6134" width="48" height="48"><path d="M512 776.533333l-238.933333 85.333334 8.533333-251.733334L128 405.333333l243.2-72.533333L512 128l140.8 209.066667L896 405.333333l-153.6 200.533334 8.533333 251.733333-238.933333-81.066667z m0-93.866666l149.333333 51.2-4.266666-157.866667 98.133333-123.733333-153.6-42.666667L512 277.333333 422.4 409.6l-153.6 42.666667 98.133333 123.733333-4.266666 157.866667L512 682.666667z" fill="#591804" p-id="6135"></path></svg></div>
+                        <div data-type="REPLY" id="jump_reply"><svg t="1687169791224" class="icon" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8570" width="48" height="48"><path d="M415.937331 320 415.937331 96 20.001331 438.176C-6.718669 461.28-6.622669 498.784 20.033331 521.824L415.937331 864 415.937331 640C639.937331 640 847.937331 688 1023.937331 928 943.937331 480 607.937331 320 415.937331 320" p-id="8571" fill="#591804"></path></svg></div>
+                        <div data-type="BOTTOM" id="jump_bottom"><svg t="1603962680160" title="跳转至最后一页" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7501" width="64" height="64"><path d="M792.855 465.806c-6.24-6.208-14.369-9.312-22.56-9.312s-16.447 3.169-22.688 9.44l-207.91 207.74v-565.28c0-17.697-14.336-32-32-32s-32.002 14.303-32.002 32v563.712l-206.24-206.164c-6.271-6.209-14.432-9.344-22.624-9.344-8.224 0-16.417 3.135-22.656 9.407-12.511 12.513-12.48 32.768 0.032 45.248L483.536 770.38c3.265 3.263 7.104 5.6 11.136 7.135 4 1.793 8.352 2.88 13.024 2.88 1.12 0 2.08-0.544 3.2-0.64 8.288 0.064 16.608-3.009 22.976-9.408l259.11-259.292c12.48-12.511 12.448-32.8-0.127-45.248z m99.706 409.725c0 17.665-14.303 32.001-31.999 32.001h-704c-17.665 0-32-14.334-32-31.999s14.335-32 32-32h704c17.696 0 32 14.334 32 31.998z" p-id="7502" fill="#591804"></path></svg></div>
                     </div>
                 </div>
             `)
@@ -3543,7 +3484,7 @@
              * Bind:Click
              * 按钮点击事件
              */
-            $('body').on('click', '.hld__docker-btns>div', function (e) {
+            $('body').on('click', '.docker-btns>div', function (e) {
                 const type = $(this).data('type')
                 if (type == 'TOP') {
                     const $nav_link = $('#pt .z a')
@@ -3583,17 +3524,17 @@
             })
         },
         renderAlwaysFunc(script) {
-            (script.isThreads() || script.isForms()) ? $('.hld__docker').show() : $('.hld__docker').hide()
-            $('#hld__jump_favor').toggle(script.isForms())
-            $('#hld__jump_reply').toggle(script.isForms())
+            (script.isThreads() || script.isForms()) ? $('.docker').show() : $('.docker').hide()
+            $('#jump_favor').toggle(script.isForms())
+            $('#jump_reply').toggle(script.isForms())
         },
         shortcutFunc: {
             backTop() {
-                $('#hld__jump_top').click()
+                $('#jump_top').click()
                 script.popNotification('返回顶部')
             },
             backBottom() {
-                $('#hld__jump_bottom').click()
+                $('#jump_bottom').click()
                 script.popNotification('最后一页')
             }
         },
@@ -3615,19 +3556,19 @@
             return queryList
         },
         style: `
-        .hld__docker{position:fixed;height:80px;width:30px;bottom:180px;right:0;transition:all ease .2s}
-        .hld__docker:hover{width:150px;height:300px;bottom:75px}
-        .hld__docker-sidebar{background:#0f0;position:fixed;height:50px;width:20px;bottom:195px;right:0;display:flex;justify-content:center;align-items:center;background:#fff6df;border:1px solid #591804;box-shadow:0 0 1px #333;border-right:none;border-radius:5px 0 0 5px}
-        .hld__excel-body .hld__docker-sidebar{background:#fff;border:1px solid #bbb}
-        .hld__docker-btns{position:absolute;top:0;left:50px;bottom:0;right:50px;display:flex;justify-content:center;align-items:center;flex-direction:column}
-        .hld__docker .hld__docker-btns>div{opacity:0;flex-shrink: 0;}
-        .hld__docker:hover .hld__docker-btns>div{opacity:1}
-        .hld__docker-btns>div{background:#fff6df;border:1px solid #591804;box-shadow:0 0 5px #444;width:50px;height:50px;border-radius:50%;margin:10px 0;cursor:pointer;display:flex;justify-content:center;align-items:center}
-        .hld__excel-body .hld__docker-btns>div{background:#fff;border:1px solid #bbb}
-        .hld__docker-btns svg{width:30px;height:30px;transition:all ease .2s}
-        .hld__docker-btns svg:hover{width:40px;height:40px}
-        .hld__excel-body .hld__docker-sidebar{background:#fff;border:1px solid #bbb}
-        .hld__excel-body .hld__docker-btns>div{background:#fff;border:1px solid #bbb}
+        .docker{position:fixed;height:80px;width:30px;bottom:180px;right:0;transition:all ease .2s}
+        .docker:hover{width:150px;height:300px;bottom:75px}
+        .docker-sidebar{background:#0f0;position:fixed;height:50px;width:20px;bottom:195px;right:0;display:flex;justify-content:center;align-items:center;background:#fff6df;border:1px solid #591804;box-shadow:0 0 1px #333;border-right:none;border-radius:5px 0 0 5px}
+        .excel-body .docker-sidebar{background:#fff;border:1px solid #bbb}
+        .docker-btns{position:absolute;top:0;left:50px;bottom:0;right:50px;display:flex;justify-content:center;align-items:center;flex-direction:column}
+        .docker .docker-btns>div{opacity:0;flex-shrink: 0;}
+        .docker:hover .docker-btns>div{opacity:1}
+        .docker-btns>div{background:#fff6df;border:1px solid #591804;box-shadow:0 0 5px #444;width:50px;height:50px;border-radius:50%;margin:10px 0;cursor:pointer;display:flex;justify-content:center;align-items:center}
+        .excel-body .docker-btns>div{background:#fff;border:1px solid #bbb}
+        .docker-btns svg{width:30px;height:30px;transition:all ease .2s}
+        .docker-btns svg:hover{width:40px;height:40px}
+        .excel-body .docker-sidebar{background:#fff;border:1px solid #bbb}
+        .excel-body .docker-btns>div{background:#fff;border:1px solid #bbb}
         `
     }
     /**
@@ -3723,18 +3664,18 @@
     //         const regDays = Math.round(regSeconds / 3600 / 24)
     //         const regYear = (regSeconds / 3600 / 24 / 365).toFixed(1)
     //         // 插入UI
-    //         const $userEnhanceContainer = $(`<div class="hld__user-enhance hld__user-enhance-${uid}"></div>`)
+    //         const $userEnhanceContainer = $(`<div class="user-enhance user-enhance-${uid}"></div>`)
     //         const $node = $el.find('.posterinfo div.stat .clickextend').siblings('div:first-child')
     //         $node.after($userEnhanceContainer)
     //         $userEnhanceContainer.append(`<div><span title="注册天数: ${regDays}天\n注册年数: ${regYear}年">坛龄: <span class="numeric userval" name="regday">${regDays}天</span></span></div>`)
     //         $userEnhanceContainer.append(`<div><span title="发帖数量: ${userInfo.postnum}">发帖: <span class="numeric userval" name="regday">${userInfo.postnum}</span></span></div>`)
-    //         $userEnhanceContainer.append(`<div><span style="display: inline-flex;align-items: center;" class="hld__user-location">属地: <span class="userval numeric hld__req-retry" style="margin-left:5px;">点击获取</span></span></div>`)
-    //         $userEnhanceContainer.append(`<div class="hld__qbc"><button>查看用户活动记录</button></div>`)
-    //         $userEnhanceContainer.find('.hld__user-location > span').click(e => {
-    //             if (!$(e.target).hasClass('hld__req-retry')) return
+    //         $userEnhanceContainer.append(`<div><span style="display: inline-flex;align-items: center;" class="user-location">属地: <span class="userval numeric req-retry" style="margin-left:5px;">点击获取</span></span></div>`)
+    //         $userEnhanceContainer.append(`<div class="qbc"><button>查看用户活动记录</button></div>`)
+    //         $userEnhanceContainer.find('.user-location > span').click(e => {
+    //             if (!$(e.target).hasClass('req-retry')) return
     //             this.getUserLocation(uid)
     //         })
-    //         $el.find('.hld__qbc > button').click(() => this.queryUserActivityRecords(userInfo))
+    //         $el.find('.qbc > button').click(() => this.queryUserActivityRecords(userInfo))
     //         // this.getUserLocation(uid)
     //     },
     //     /**
@@ -3790,15 +3731,15 @@
 
     //     },
     //     getUserLocation(uid) {
-    //         $('.hld__user-enhance-'+uid).find('.hld__user-location > span').attr('class', 'userval numeric loading').empty()
+    //         $('.user-enhance-'+uid).find('.user-location > span').attr('class', 'userval numeric loading').empty()
     //         // 调用数据接口获取属地
     //         this.getRemoteUserInfo(uid)
     //         .then(remoteUserInfo => {
-    //             $('.hld__user-enhance-'+uid).find('.hld__user-location').attr('title', `IP属地: ${remoteUserInfo.ipLoc}`)
-    //             $('.hld__user-enhance-'+uid).find('.hld__user-location > span').replaceWith(this.getCountryFlag(remoteUserInfo.ipLoc))
+    //             $('.user-enhance-'+uid).find('.user-location').attr('title', `IP属地: ${remoteUserInfo.ipLoc}`)
+    //             $('.user-enhance-'+uid).find('.user-location > span').replaceWith(this.getCountryFlag(remoteUserInfo.ipLoc))
     //         })
     //         .catch(err => {
-    //             $('.hld__user-enhance-'+uid).find('.hld__user-location > span').attr('class', 'userval numeric hld__req-retry').html(`获取失败(${err.status}), 点击重试`)
+    //             $('.user-enhance-'+uid).find('.user-location > span').attr('class', 'userval numeric req-retry').html(`获取失败(${err.status}), 点击重试`)
     //         })
     //     },
     //     /**
@@ -3839,12 +3780,12 @@
     //         if (script.setting.advanced.locationFlagMode != 'TEXT') {
     //             const flagUrl = `https://www.huuua.com/zi/scss/icons/flag-icon-css/flags`
     //             if (CHINESE_CONVERT_ISO3166_1[chsName]) {
-    //                 flagElement = `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1[chsName].toLowerCase()}.svg"/>`
+    //                 flagElement = `<img class="country-flag" onerror="this.style.width='auto'" alt="${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1[chsName].toLowerCase()}.svg"/>`
     //             } else if (CHINA_PROVINCE.includes(chsName.endsWith('省') ? chsName.slice(0, -1) : chsName)) {
-    //                 flagElement = `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="中国" src="${flagUrl}/cn.svg"/> `
+    //                 flagElement = `<img class="country-flag" onerror="this.style.width='auto'" alt="中国" src="${flagUrl}/cn.svg"/> `
     //                 const specialArea = ['香港', '澳门', '台湾'].find(name => chsName.endsWith(name))
     //                 if (specialArea) {
-    //                     flagElement += `<img class="hld__country-flag" onerror="this.style.width='auto'" alt="中国${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1['中国'+chsName].toLowerCase()}.svg"/> `
+    //                     flagElement += `<img class="country-flag" onerror="this.style.width='auto'" alt="中国${chsName}" src="${flagUrl}/${CHINESE_CONVERT_ISO3166_1['中国'+chsName].toLowerCase()}.svg"/> `
     //                 }
     //             }
     //         }
@@ -3864,48 +3805,48 @@
     //      * @param {Object} userInfo 用户信息对象
     //      */
     //     async queryUserActivityRecords(userInfo) {
-    //         $('#hld__chart_cover').remove()
+    //         $('#chart_cover').remove()
     //         if (typeof echarts === 'undefined') {
     //             script.popMsg('该功能所需资源库正在加载，请稍后再试', 'warn')
     //             return
     //         }
     //         $('body').append(`
-    //             <div id="hld__chart_cover" class="animated zoomIn">
-    //                 <a href="javascript:void(0)" class="hld__setting-close">×</a>
-    //                 <div id="hld__chart_container">
+    //             <div id="chart_cover" class="animated zoomIn">
+    //                 <a href="javascript:void(0)" class="setting-close">×</a>
+    //                 <div id="chart_container">
     //                     <div class="loading"></div>
     //                 </div>
-    //                 <div class="hld__chart-statistics">
-    //                     <div class="hld__statistics-status">
-    //                         <div class="hld__st-t">🏷️ 当前统计的数据量</div>
-    //                         <div class="hld__st-s1">用户发布的主题(页):</div>
-    //                         <div class="hld__st-s1-1">- 已统计
-    //                             <span class="hld__st-c" id="hld__statistics_post_pages">0</span>页
-    //                             <span class="hld__st-l" id="hld__statistics_post_status"></span>
+    //                 <div class="chart-statistics">
+    //                     <div class="statistics-status">
+    //                         <div class="st-t">🏷️ 当前统计的数据量</div>
+    //                         <div class="st-s1">用户发布的主题(页):</div>
+    //                         <div class="st-s1-1">- 已统计
+    //                             <span class="st-c" id="statistics_post_pages">0</span>页
+    //                             <span class="st-l" id="statistics_post_status"></span>
     //                         </div>
-    //                         <div class="hld__st-s1">用户回复的主题(页)</div>
-    //                         <div class="hld__st-s1-1">- 已统计
-    //                             <span class="hld__st-c" id="hld__statistics_reply_pages">0</span>页
-    //                             <span class="hld__st-l" id="hld__statistics_reply_status"></span>
+    //                         <div class="st-s1">用户回复的主题(页)</div>
+    //                         <div class="st-s1-1">- 已统计
+    //                             <span class="st-c" id="statistics_reply_pages">0</span>页
+    //                             <span class="st-l" id="statistics_reply_status"></span>
     //                         </div>
-    //                         <div class="hld__st-s1">数据天数跨度</div>
-    //                         <div class="hld__st-s1-1">- 已统计
-    //                             <span class="hld__st-c" id="hld__statistics_days_range">-</span>天内
+    //                         <div class="st-s1">数据天数跨度</div>
+    //                         <div class="st-s1-1">- 已统计
+    //                             <span class="st-c" id="statistics_days_range">-</span>天内
     //                         </div>
-    //                         <div class="hld__st-t">🏷️ 统计结果</div>
-    //                         <div class="hld__st-s2">✔️ 发布主题: <span class="hld__st-c" id="hld__statistics_post_count">-</span></div>
-    //                         <div class="hld__st-s2">✔️ 回复主题: <span class="hld__st-c" id="hld__statistics_reply_count">-</span></div>
-    //                         <div class="hld__st-s2">✔️ 总计发帖: <span class="hld__st-c" id="hld__statistics_total_count">-</span></div>
+    //                         <div class="st-t">🏷️ 统计结果</div>
+    //                         <div class="st-s2">✔️ 发布主题: <span class="st-c" id="statistics_post_count">-</span></div>
+    //                         <div class="st-s2">✔️ 回复主题: <span class="st-c" id="statistics_reply_count">-</span></div>
+    //                         <div class="st-s2">✔️ 总计发帖: <span class="st-c" id="statistics_total_count">-</span></div>
     //                     </div>
-    //                     <button id="hld__chart_deep_query">深度统计</button>
+    //                     <button id="chart_deep_query">深度统计</button>
     //                 </div>
     //             </div>
     //         `)
-    //         $('#hld__chart_cover .hld__setting-close').click(() => {
+    //         $('#chart_cover .setting-close').click(() => {
     //             this.queryUserDeepRecords('end')
-    //             $('#hld__chart_cover').remove()
+    //             $('#chart_cover').remove()
     //         })
-    //         $('#hld__chart_cover #hld__chart_deep_query').click(() => this.queryUserDeepRecords())
+    //         $('#chart_cover #chart_deep_query').click(() => this.queryUserDeepRecords())
 
     //         this.activeCount = []
     //         this.requestTasks = []
@@ -3935,7 +3876,7 @@
     //         Promise.allSettled(this.requestTasks)
     //         .then(() => {
     //             // 渲染chart
-    //             const chartContainer = document.getElementById('hld__chart_container')
+    //             const chartContainer = document.getElementById('chart_container')
     //             if (!chartContainer) return
     //             this.chart = echarts.init(chartContainer)
     //             this.statisticsCount()
@@ -3949,9 +3890,9 @@
     //      * 查询当前用户深度活动记录(到上限)
     //      */
     //     async queryUserDeepRecords(status) {
-    //         if (status != 'end' && !$('#hld__chart_deep_query').hasClass('hld__query-loading')) {
+    //         if (status != 'end' && !$('#chart_deep_query').hasClass('query-loading')) {
     //             // 步进统计
-    //             $('#hld__chart_deep_query').addClass('hld__query-loading').text('暂停统计')
+    //             $('#chart_deep_query').addClass('query-loading').text('暂停统计')
     //             this.queryTimer = setInterval(async () => {
     //                 try {
     //                     if (!this.pageInfo.post.status.endsWith('max')) {
@@ -3972,9 +3913,9 @@
     //             }, 2000)
     //         } else {
     //             // 暂停&完成统计
-    //             $('#hld__chart_deep_query').removeClass('hld__query-loading').text('继续统计')
+    //             $('#chart_deep_query').removeClass('query-loading').text('继续统计')
     //             if (status == 'end') {
-    //                 $('#hld__chart_deep_query').attr('disabled', 'disabled').text('统计完成')
+    //                 $('#chart_deep_query').attr('disabled', 'disabled').text('统计完成')
     //             }
     //             if (this.queryTimer) {
     //                 clearInterval(this.queryTimer)
@@ -4003,17 +3944,17 @@
     //         const postCount = this.activeCount.reduce((p, c) => p + c.post, 0)
     //         const replyCount = this.activeCount.reduce((p, c) => p + c.reply, 0)
     //         // 计算统计数据
-    //         $('#hld__statistics_post_pages').text(this.pageInfo.post.pages)
-    //         $('#hld__statistics_post_status').attr('class', `hld__st-l ${this.pageInfo.post.status}`)
-    //         $('#hld__statistics_reply_pages').text(this.pageInfo.reply.pages)
-    //         $('#hld__statistics_reply_status').attr('class', `hld__st-l ${this.pageInfo.reply.status}`)
-    //         $('#hld__statistics_post_count').text(postCount)
-    //         $('#hld__statistics_reply_count').text(replyCount)
-    //         $('#hld__statistics_total_count').text(postCount + replyCount)
+    //         $('#statistics_post_pages').text(this.pageInfo.post.pages)
+    //         $('#statistics_post_status').attr('class', `st-l ${this.pageInfo.post.status}`)
+    //         $('#statistics_reply_pages').text(this.pageInfo.reply.pages)
+    //         $('#statistics_reply_status').attr('class', `st-l ${this.pageInfo.reply.status}`)
+    //         $('#statistics_post_count').text(postCount)
+    //         $('#statistics_reply_count').text(replyCount)
+    //         $('#statistics_total_count').text(postCount + replyCount)
     //         // 计算时间跨度
     //         const minPostDate = Math.min(this.pageInfo.post.earliestPostdate, this.pageInfo.reply.earliestPostdate)
     //         const daysRange = Math.ceil((new Date().getTime() / 1000 - minPostDate) / 86400)
-    //         $('#hld__statistics_days_range').text(daysRange)
+    //         $('#statistics_days_range').text(daysRange)
     //     },
     //     /**
     //      * 发起查询用户记录
@@ -4031,7 +3972,7 @@
     //                     if (page > this.pageInfo[type].pages) {
     //                         this.pageInfo[type].pages = page
     //                     }
-    //                     if (this.pageInfo[type].status != 'hld__grab-max') {
+    //                     if (this.pageInfo[type].status != 'grab-max') {
     //                         this.pageInfo[type].status = ''
     //                     }
     //                     postRes.data.__T.forEach(item => {
@@ -4044,9 +3985,9 @@
     //                 if (err) {
     //                     const errMsg = (err && Array.isArray(err)) ? err.join(' ') : err
     //                     if (errMsg.includes('没有符合条件的结果')) {
-    //                         this.pageInfo[type].status = 'hld__grab-max'
+    //                         this.pageInfo[type].status = 'grab-max'
     //                     } else {
-    //                         this.pageInfo[type].status = 'hld__grab-err'
+    //                         this.pageInfo[type].status = 'grab-err'
     //                         reject({errMsg, type, page})
     //                         return
     //                     }
@@ -4137,38 +4078,38 @@
     //                 }
     //             }]
     //         })
-    //         $('.hld__chart-statistics').show()
+    //         $('.chart-statistics').show()
     //     },
     //     style: `
-    //     .hld__user-enhance {display:flex;flex-wrap:wrap;}
-    //     .hld__user-enhance > div {box-sizing:border-box;width:50%;padding-right:3px;}
-    //     .hld__user-enhance span[name=location] {margin-left:5px;}
-    //     .hld__country-flag {width:20px;height:auto;margin-left:5px;}
-    //     .hld__user-location .loading {width:8px;height:8px;border:1px solid #9c958b;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
-    //     .hld__user-location .hld__req-retry:hover {text-decoration: underline;cursor: pointer;}
-    //     .hld__qbc {width:100% !important;padding:5px 0;}
-    //     .hld__qbc > button {margin:0;}
-    //     #hld__chart_cover {position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);border-radius:10px;background:#FFF;border:1px solid #AAA;box-shadow:0 0 10px rgba(0,0,0,.3);z-index:9993;}
-    //     #hld__chart_cover > .hld__setting-close {background:#FFF;border:1px solid #AAA;color:#AAA;}
-    //     #hld__chart_cover > .hld__setting-close:hover {background:#AAA;border:1px solid #FFF;color:#FFF;}
-    //     #hld__chart_container {width:1000px;height:600px;}
-    //     #hld__chart_cover .loading {position:absolute;top: 50%;left:50%;margin-top:-20px;margin-left:-25px;width:40px;height:40px;border:2px solid #AAA;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
-    //     .hld__chart-statistics {display:none;position:absolute;top:calc(50% - 220px);right:10px;min-width:140px;height:400px;}
-    //     .hld__statistics-status > div {padding: 2px 0;}
-    //     .hld__statistics-status > .hld__st-t {font-weight:bold;font-size:1.1em;padding-top: 25px;}
-    //     .hld__statistics-status > .hld__st-s1 {margin-top: 10px;}
-    //     .hld__statistics-status > .hld__st-s1-1 {font-size:0.9em;color:#00000073;}
-    //     .hld__statistics-status .hld__st-c {font-weight:bold;font-size:18px;color:#1677ff;margin:0px 2px;}
-    //     .hld__statistics-status .hld__st-l {display: inline-block;padding: 1px 5px;color: #FFF;transform: scale(0.8);border-radius: 5px;}
-    //     .hld__statistics-status .hld__st-l.hld__grab-max {background: #67c23a;}
-    //     .hld__statistics-status .hld__st-l.hld__grab-max:after {content: '最大';}
-    //     .hld__statistics-status .hld__st-l.hld__grab-err {background: #f56c6c;}
-    //     .hld__statistics-status .hld__st-l.hld__grab-err:after {content: '错误';}
-    //     #hld__chart_deep_query {display:flex;align-items:center;margin-top:30px;background:#1677ff;border-color:#1677ff;color:#FFF;padding:6px 15px;border-radius:8px;text-align:center;cursor:pointer;}
-    //     #hld__chart_deep_query:not(disabled):hover {opacity:.7;}
-    //     #hld__chart_deep_query:disabled {background: #67c23a;}
-    //     .hld__query-loading:before {content:"";display: inline-block;margin-right: 5px;width: 8px;height: 8px;border: 2px solid #fff;border-top-color: transparent;border-radius: 100%;animation: loading-circle infinite 0.75s linear;}
-    //     .hld__statistics-status. {padding:10px 0;}
+    //     .user-enhance {display:flex;flex-wrap:wrap;}
+    //     .user-enhance > div {box-sizing:border-box;width:50%;padding-right:3px;}
+    //     .user-enhance span[name=location] {margin-left:5px;}
+    //     .country-flag {width:20px;height:auto;margin-left:5px;}
+    //     .user-location .loading {width:8px;height:8px;border:1px solid #9c958b;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
+    //     .user-location .req-retry:hover {text-decoration: underline;cursor: pointer;}
+    //     .qbc {width:100% !important;padding:5px 0;}
+    //     .qbc > button {margin:0;}
+    //     #chart_cover {position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);border-radius:10px;background:#FFF;border:1px solid #AAA;box-shadow:0 0 10px rgba(0,0,0,.3);z-index:9993;}
+    //     #chart_cover > .setting-close {background:#FFF;border:1px solid #AAA;color:#AAA;}
+    //     #chart_cover > .setting-close:hover {background:#AAA;border:1px solid #FFF;color:#FFF;}
+    //     #chart_container {width:1000px;height:600px;}
+    //     #chart_cover .loading {position:absolute;top: 50%;left:50%;margin-top:-20px;margin-left:-25px;width:40px;height:40px;border:2px solid #AAA;border-top-color:transparent;border-radius:100%;animation:loading-circle infinite 0.75s linear;}
+    //     .chart-statistics {display:none;position:absolute;top:calc(50% - 220px);right:10px;min-width:140px;height:400px;}
+    //     .statistics-status > div {padding: 2px 0;}
+    //     .statistics-status > .st-t {font-weight:bold;font-size:1.1em;padding-top: 25px;}
+    //     .statistics-status > .st-s1 {margin-top: 10px;}
+    //     .statistics-status > .st-s1-1 {font-size:0.9em;color:#00000073;}
+    //     .statistics-status .st-c {font-weight:bold;font-size:18px;color:#1677ff;margin:0px 2px;}
+    //     .statistics-status .st-l {display: inline-block;padding: 1px 5px;color: #FFF;transform: scale(0.8);border-radius: 5px;}
+    //     .statistics-status .st-l.grab-max {background: #67c23a;}
+    //     .statistics-status .st-l.grab-max:after {content: '最大';}
+    //     .statistics-status .st-l.grab-err {background: #f56c6c;}
+    //     .statistics-status .st-l.grab-err:after {content: '错误';}
+    //     #chart_deep_query {display:flex;align-items:center;margin-top:30px;background:#1677ff;border-color:#1677ff;color:#FFF;padding:6px 15px;border-radius:8px;text-align:center;cursor:pointer;}
+    //     #chart_deep_query:not(disabled):hover {opacity:.7;}
+    //     #chart_deep_query:disabled {background: #67c23a;}
+    //     .query-loading:before {content:"";display: inline-block;margin-right: 5px;width: 8px;height: 8px;border: 2px solid #fff;border-top-color: transparent;border-radius: 100%;animation: loading-circle infinite 0.75s linear;}
+    //     .statistics-status. {padding:10px 0;}
     //     @keyframes loading-circle {0% {transform:rotate(0);}100% {transform:rotate(360deg);}}
     //     `
     // }
@@ -4190,11 +4131,11 @@
             script.getModule('SettingPanel').addButton({
                 title: '插件管理',
                 desc: '插件管理',
-                click: () => $('#hld__plugin_panel').show()
+                click: () => $('#plugin_panel').show()
             })
             try {
                 // 注册插件管理面板
-                GM_registerMenuCommand('插件管理', () => $('#hld__plugin_panel').show())
+                GM_registerMenuCommand('插件管理', () => $('#plugin_panel').show())
             } catch {}
             // 添加插件到导入导出配置
             script.getModule('BackupModule').addItem({
@@ -4218,33 +4159,33 @@
             const _this = this
             // 插件设置面板
             const $pluginPanel = $(`
-                <div id="hld__plugin_panel" class="hld__list-panel animated fadeInUp">
-                    <a href="javascript:void(0)" class="hld__setting-close" close-type="hide">×</a>
-                    <div class="hld__plugin-header"><b>插件管理</b></div>
-                    <div class="hld__plugin-scorllarea">
-                        <div class="hld__plugin-content"></div>
+                <div id="plugin_panel" class="list-panel animated fadeInUp">
+                    <a href="javascript:void(0)" class="setting-close" close-type="hide">×</a>
+                    <div class="plugin-header"><b>插件管理</b></div>
+                    <div class="plugin-scorllarea">
+                        <div class="plugin-content"></div>
                     </div>
-                    <div class="hld__plugin-footer">
-                        <button class="hld__btn" id="hld__plugin_getmore">获取更多插件</button>
-                        <button class="hld__btn" id="hld__plugin_save">保存</button>
+                    <div class="plugin-footer">
+                        <button class="btn" id="plugin_getmore">获取更多插件</button>
+                        <button class="btn" id="plugin_save">保存</button>
                     </div>
                 </div>
             `)
             const yamiboScriptPlugins = unsafeWindow?.yamiboScriptPlugins || []
             yamiboScriptPlugins.forEach(module => {
                 const $plugin = $(`
-                    <div class="hld__plugin">
-                        <div class="hld__plugin-info">
-                            <div class="hld__plugin-name">
+                    <div class="plugin">
+                        <div class="plugin-info">
+                            <div class="plugin-name">
                                 <a href="${module.meta.updateURL || module.meta.namespace}" target="_blank">${module.title || module.name}<span>v${module.version}</span></a>
                             </div>
-                            <div class="hld__plugin-desc" title="${module.desc}">${module.desc}</div>
+                            <div class="plugin-desc" title="${module.desc}">${module.desc}</div>
                         </div>
                     </div>
                 `)
                 if (module.error) {
                     // 插件有误
-                    $plugin.addClass('hld__plugin-error hld__help')
+                    $plugin.addClass('plugin-error help')
                     $plugin.attr('error', module.error).attr('help', '插件未执行，原因: ' + module.errorMsg)
                 }
                 const pluginID = this.getPluginID(module)
@@ -4257,7 +4198,7 @@
                     } else if (typeof module.setting == 'object') {
                         settings.push(module.setting)
                     }
-                    const $pluginSettings = $('<div class="hld__plugin-settings"><table></table></div>')
+                    const $pluginSettings = $('<div class="plugin-settings"><table></table></div>')
                     // 渲染表单
                     settings.forEach(setting => {
                         let formItem = ''
@@ -4283,7 +4224,7 @@
                         }
                         $pluginSettings.find('table').append(`
                             <tr>
-                                <td><span ${setting.desc ? 'class="hld__help" help="' + setting.desc + '" ' : ''}>${setting.title || setting.key}</span></td>
+                                <td><span ${setting.desc ? 'class="help" help="' + setting.desc + '" ' : ''}>${setting.title || setting.key}</span></td>
                                 <td>${formItem}</td>
                             </tr>
                         `)
@@ -4303,14 +4244,14 @@
                     })
                     // 添加按钮及设置面板
                     $plugin.append($pluginSettings)
-                    $plugin.find('.hld__plugin-info').append(`<div class="hld__plugin-expand hld__help" help="查看插件设置"><img src="${SVG_ICON_SETTING}"></div>`)
+                    $plugin.find('.plugin-info').append(`<div class="plugin-expand help" help="查看插件设置"><img src="${SVG_ICON_SETTING}"></div>`)
                 }
                 // 自定义按钮
                 if (module.buttons && Array.isArray(module.buttons) && module.buttons.length > 0) {
-                    const $pluginButtons = $('<div class="hld__plugin-buttons"></div>')
+                    const $pluginButtons = $('<div class="plugin-buttons"></div>')
                     module.buttons.forEach((button, index) => {
                         const buttonid = `${pluginID}_button_${index}`
-                        const $button = $(`<button class="hld__btn" id="${buttonid}">${button.title || '未命名按钮'}</button>`)
+                        const $button = $(`<button class="btn" id="${buttonid}">${button.title || '未命名按钮'}</button>`)
                         $button.click(() => {
                             // 插件注入对象
                             const moduleProxy = this.createModuleProxy(module)
@@ -4324,27 +4265,27 @@
                         button.$el = $button
                         $pluginButtons.append($button)
                     })
-                    $plugin.find('.hld__plugin-settings').append($pluginButtons)
+                    $plugin.find('.plugin-settings').append($pluginButtons)
                 }
-                if ($plugin.find('.hld__plugin-settings tr').length == 0 && $plugin.find('.hld__plugin-settings button').length == 0) {
-                    $plugin.find('.hld__plugin-settings').append('<div class="hld__plugin-nosettings">暂无可配置项</div>')
+                if ($plugin.find('.plugin-settings tr').length == 0 && $plugin.find('.plugin-settings button').length == 0) {
+                    $plugin.find('.plugin-settings').append('<div class="plugin-nosettings">暂无可配置项</div>')
                 }
-                $pluginPanel.find('.hld__plugin-content').append($plugin)
+                $pluginPanel.find('.plugin-content').append($plugin)
             })
             if (yamiboScriptPlugins.length == 0) {
-                $pluginPanel.find('.hld__plugin-content').html('<div class="hld_plugin-empty">未安装任何插件</div>')
+                $pluginPanel.find('.plugin-content').html('<div class="hld_plugin-empty">未安装任何插件</div>')
             }
             // 展开设置
-            $pluginPanel.find('.hld__plugin-expand').click(function(){
-                $(this).parent().siblings('.hld__plugin-settings').slideToggle(100)
+            $pluginPanel.find('.plugin-expand').click(function(){
+                $(this).parent().siblings('.plugin-settings').slideToggle(100)
             })
             // 获取更多插件
-            $pluginPanel.find('#hld__plugin_getmore').click(function(){
+            $pluginPanel.find('#plugin_getmore').click(function(){
                 window.open('https://greasyfork.org/zh-CN/scripts?q=yamibo%E4%BC%98%E5%8C%96%E6%91%B8%E9%B1%BC%E4%BD%93%E9%AA%8C%E6%8F%92%E4%BB%B6')
             })
             // 保存设置
-            $pluginPanel.find('#hld__plugin_save').click(function(){
-                _this.saveSetting()
+            $pluginPanel.find('#plugin_save').click(function(){
+                _this.savePluginSetting()
             })
             $('body').append($pluginPanel)
         },
@@ -4451,7 +4392,7 @@
         loadSetting() {
             try {
                 // 插件设置
-                const pluginSettingStr = script.getValue('hld__yamibo_plugin_setting')
+                const pluginSettingStr = script.getValue('yamibo_plugin_setting')
                 if (pluginSettingStr) {
                     let localPluginSetting = JSON.parse(pluginSettingStr)
                     for (const pluginName of Object.keys(localPluginSetting)) {
@@ -4474,10 +4415,10 @@
         },
         /**
          * 保存插件配置
-         * @method saveSetting
+         * @method savePluginSetting
          * @param {String} msg 自定义消息信息
          */
-        saveSetting (msg='保存插件配置成功，刷新页面生效') {
+        savePluginSetting (msg='保存插件配置成功，刷新页面生效') {
             script.modules.forEach(module => {
                 if (module.type == 'plugin' && module.name) {
                     const pluginID = this.getPluginID(module)
@@ -4514,9 +4455,10 @@
                     }
                 }
             })
-            script.setValue('hld__yamibo_plugin_setting', JSON.stringify(script.setting.plugin))
+            script.setValue('yamibo_plugin_setting', JSON.stringify(script.setting.plugin))
+            console.log("yamibo_plugin_setting",script.getValue('yamibo_plugin_setting'));
             msg && script.popMsg(msg)
-            $('#hld__plugin_panel').hide()
+            $('#plugin_panel').hide()
         },
         /**
          * 获取插件的唯一ID
@@ -4534,30 +4476,30 @@
             return str.split('').reduce((prevHash, currVal) => (((prevHash << 5) - prevHash) + currVal.charCodeAt(0))|0, 0)
         },
         style: `
-        #hld__plugin_panel {display:none;width:400px;min-height:300px;}
-        #hld__plugin_panel .hld__plugin-header {min-height:20px;}
-        #hld__plugin_panel .hld__plugin-scorllarea {margin:10px 0;height:300px;padding-right:10px;overflow-y:auto;border-top:1px solid #e0c19e;border-bottom:1px solid #e0c19e;}
-        #hld__plugin_panel .hld__plugin-content {height:auto;}
-        #hld__plugin_panel .hld_plugin-empty {margin-top:20%;text-align:center;font-size:16px;color:#666;}
-        #hld__plugin_panel .hld__plugin-footer {min-height:32px;display:flex;justify-content:space-between;}
-        #hld__plugin_panel button {transition:all .2s ease;cursor:pointer;}
-        .hld__plugin {padding:10px 0;border-bottom:1px dashed #666;}
-        .hld__plugin-error {text-decoration: line-through;}
-        .hld__plugin-info {position:relative;padding-right:30px;box-sizing:border-box;}
-        .hld__plugin-name {margin-bottom:5px;}
-        .hld__plugin-name a {font-weight:bold;font-size:16px;color:#591804;}
-        .hld__plugin-name span {margin-left:4px;font-size:70%;color:#666;}
-        .hld__plugin-desc {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        .hld__plugin-expand {width:20px;display:flex;align-items:center;cursor:pointer;position:absolute;top:10px;right:0px;}
-        .hld__plugin-expand img {width:100%;transition:all .2s ease}
-        .hld__plugin-expand:hover img {width:100%;transform:rotate(45deg);}
-        .hld__plugin-settings {display:none;width:100%;height:auto;border-top:1px dashed #999;margin-top:10px;padding-top:10px;}
-        .hld__plugin-settings table td {padding-right:10px;}
-        .hld__plugin-settings textarea {resize:none;}
-        .hld__plugin-settings input[type=number] {border: 1px solid #e6c3a8;box-shadow: 0 0 2px 0 #7c766d inset;border-radius: 0.25em;}
-        .hld__plugin-buttons {padding-top:5px;}
-        .hld__plugin-buttons > button {margin-right:5px;margin-top:5px;}
-        .hld__plugin-nosettings {color:#666;}
+        #plugin_panel {display:none;width:400px;min-height:300px;}
+        #plugin_panel .plugin-header {min-height:20px;}
+        #plugin_panel .plugin-scorllarea {margin:10px 0;height:300px;padding-right:10px;overflow-y:auto;border-top:1px solid #e0c19e;border-bottom:1px solid #e0c19e;}
+        #plugin_panel .plugin-content {height:auto;}
+        #plugin_panel .hld_plugin-empty {margin-top:20%;text-align:center;font-size:16px;color:#666;}
+        #plugin_panel .plugin-footer {min-height:32px;display:flex;justify-content:space-between;}
+        #plugin_panel button {transition:all .2s ease;cursor:pointer;}
+        .plugin {padding:10px 0;border-bottom:1px dashed #666;}
+        .plugin-error {text-decoration: line-through;}
+        .plugin-info {position:relative;padding-right:30px;box-sizing:border-box;}
+        .plugin-name {margin-bottom:5px;}
+        .plugin-name a {font-weight:bold;font-size:16px;color:#591804;}
+        .plugin-name span {margin-left:4px;font-size:70%;color:#666;}
+        .plugin-desc {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .plugin-expand {width:20px;display:flex;align-items:center;cursor:pointer;position:absolute;top:10px;right:0px;}
+        .plugin-expand img {width:100%;transition:all .2s ease}
+        .plugin-expand:hover img {width:100%;transform:rotate(45deg);}
+        .plugin-settings {display:none;width:100%;height:auto;border-top:1px dashed #999;margin-top:10px;padding-top:10px;}
+        .plugin-settings table td {padding-right:10px;}
+        .plugin-settings textarea {resize:none;}
+        .plugin-settings input[type=number] {border: 1px solid #e6c3a8;box-shadow: 0 0 2px 0 #7c766d inset;border-radius: 0.25em;}
+        .plugin-buttons {padding-top:5px;}
+        .plugin-buttons > button {margin-right:5px;margin-top:5px;}
+        .plugin-nosettings {color:#666;}
         `
     }
 
@@ -4589,8 +4531,6 @@
     script.addModule(AutoPage)
     script.addModule(KeywordsBlock)
     script.addModule(MarkAndBan)
-    script.addModule(EyeCareMode)
-    script.addModule(DarkMode)
     script.addModule(FontResize)
     script.addModule(ExtraDocker)
     script.addModule(DomainRedirect)
