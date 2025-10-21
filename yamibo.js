@@ -451,11 +451,69 @@
             this.renderAlways()
             this.isThreads() && this.renderThreads()
             this.isForms() && this.renderForms()
-            setInterval(() => {
-                this.renderAlways()
-                this.isThreads() && this.renderThreads()
-                this.isForms() && this.renderForms()
-            }, 100)
+            const moOpts = { childList: true, subtree: true, attributes: false, characterData: false };
+
+            // 只在一帧内处理一次，避免突发大量节点导致回调风暴
+            let scheduled = false;
+            // 防止重入
+            let isRendering = false;
+
+            // 仅当真正影响到你关心的区域时才处理
+            function isUsefulMutation(records) {
+            for (const r of records) {
+                if (!r.addedNodes || r.addedNodes.length === 0) continue;
+                for (const n of r.addedNodes) {
+                // 只关心元素节点；跳过 style/script/text 等
+                if (n.nodeType !== 1) continue;
+                // 命中你关心的容器或其后代（按实际结构改）
+                if (
+                    n.id === 'threadlist' || n.id === 'postlist' ||
+                    (n.closest && (n.closest('#threadlist') || n.closest('#postlist')))
+                ) {
+                    return true;
+                }
+                }
+            }
+            return false;
+            }
+
+            const process = () => {
+            scheduled = false;
+            if (isRendering) return;
+            isRendering = true;
+            try {
+                // 关键：渲染前暂时断开，避免自己改 DOM 又触发回调形成死循环
+                mo.disconnect();
+
+                // === 你的渲染 ===
+                this.renderAlways();
+                if (document.getElementById('threadlist')) this.renderThreads();
+                if (document.getElementById('postlist')) this.renderForms();
+                // === 你的渲染 ===
+            } finally {
+                // 渲染完再恢复监听
+                mo.observe(document.documentElement, moOpts);
+                isRendering = false;
+            }
+            };
+
+            const mo = new MutationObserver((records) => {
+            if (!isUsefulMutation(records)) return;
+            // 合并同一批次/同一帧的多次变更，只调一次渲染
+            if (!scheduled) {
+                scheduled = true;
+                // 用 rAF 合并到浏览器下一帧，体感“零延迟”
+                (window.requestAnimationFrame || setTimeout)(process, 0);
+            }
+            });
+
+            // 初次观测（尽量缩小范围：若能直接指向具体容器更好）
+            mo.observe(document.documentElement, moOpts);
+
+            // 首屏先跑一遍，不等 Mutation 到来
+            this.renderAlways();
+            if (document.getElementById('threadlist')) this.renderThreads();
+            if (document.getElementById('postlist')) this.renderForms();
         }
         /**
          * 获取脚本信息
@@ -1687,11 +1745,6 @@
                 }
                 $('body').toggleClass('excel-original-no', !script.setting.advanced.excelNoMode)
             }
-            if(script.setting.normal.excelMode && $('.excel-body').length > 0 && $('#mmc').length == 0) 
-            { $('body').addClass('excel-body-err') }
-            else { 
-                $('body').removeClass('excel-body-err') 
-            }
             // Excel Title
             if ($('.excel-body').length > 0) {
                 const excelTitle = script.setting.advanced.excelTitle
@@ -1771,8 +1824,8 @@
         .excel-body i.pstatus{color:#7797bd;}
         .excel-body .c0{display:table-cell;}
         .excel-body .pil.cl, .excel-body .pls.cl.favatar i, .excel-body .tbox.theatlevel, .excel-body .sign, .excel-body .cm, .excel-body .rate, .excel-body .psth.xs1, .excel-body .plc.plm, .excel-body .plc .po.hin, .excel-body .tns.xg2, .excel-body .pti, .excel-body .displaynoneInExcel{display:none;}
-        .excel-body-err {padding-top: 150px}
         .excel-body .tl .bm_c tr:hover th,.excel-body .tl .bm_c tr:hover td{background-color:#fff}
+        .excel-body.excel-theme-tencent #nv_forum {margin-top: 145px;}
         .excel-body .tl th {border-bottom: 1px solid #ebebeb;border-right: 1px solid #ebebeb;}
         .excel-header, .excel-footer, .excel-setting, .half-clone {display: none;}
         .excel-header>div, .excel-footer>div {position: relative;box-sizing: border-box;}
